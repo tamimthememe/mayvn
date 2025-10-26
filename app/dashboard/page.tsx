@@ -111,8 +111,48 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Sidebar */}
+      <div className="fixed left-0 top-0 w-64 h-screen bg-card border-r border-border p-6 flex flex-col">
+        <div className="flex items-center gap-2 mb-8">
+          <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <span className="text-xl font-bold">Mayvn</span>
+        </div>
+
+        <nav className="flex-1 space-y-2">
+          <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary">
+            <span>📊 Dashboard</span>
+          </Link>
+          <Link
+            href="/campaigns"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-card-foreground/10 transition-colors"
+          >
+            <span>📅 Campaigns</span>
+          </Link>
+          <Link
+            href="/content"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-card-foreground/10 transition-colors"
+          >
+            <span>✨ Content</span>
+          </Link>
+          <Link
+            href="/engagement"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-card-foreground/10 transition-colors"
+          >
+            <span>💬 Engagement</span>
+          </Link>
+          <Link
+            href="/analytics"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-card-foreground/10 transition-colors"
+          >
+            <span>📈 Analytics</span>
+          </Link>
+        </nav>
+      </div>
+
       {/* Header */}
-      <header className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-40">
+      <header className="ml-64 border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
@@ -144,7 +184,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="ml-64 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">Welcome back, John!</h2>
