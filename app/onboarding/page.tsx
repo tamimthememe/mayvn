@@ -1,14 +1,20 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/contexts/AuthContext"
+import { updateUserOnboarding } from "@/lib/userService"
 
 export default function OnboardingPage() {
+  const router = useRouter()
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -88,6 +94,31 @@ export default function OnboardingPage() {
   const handlePrev = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
+    }
+  }
+
+  const handleComplete = async () => {
+    if (!user) {
+      router.push("/login")
+      return
+    }
+
+    try {
+      setLoading(true)
+      await updateUserOnboarding(
+        user.uid,
+        formData.platforms,
+        formData.goals,
+        formData.experience,
+        formData.company
+      )
+      router.push("/dashboard")
+    } catch (error) {
+      console.error("Error completing onboarding:", error)
+      // Still navigate to dashboard even if there's an error
+      router.push("/dashboard")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -348,12 +379,14 @@ export default function OnboardingPage() {
                 Back
               </Button>
               {currentStep === steps.length - 1 ? (
-                <Link href="/dashboard" className="flex-1">
-                  <Button className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90">
-                    Go to Dashboard
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={handleComplete}
+                  disabled={loading}
+                  className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                >
+                  {loading ? "Saving..." : "Go to Dashboard"}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               ) : (
                 <Button
                   onClick={handleNext}

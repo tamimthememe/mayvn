@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sparkles, Mail, Lock, User, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { createUserDocument } from "@/lib/userService";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -35,7 +36,24 @@ export default function RegisterPage() {
     try {
       setError("");
       setLoading(true);
-      await signup(email, password);
+      
+      // Create user account
+      const userCredential = await signup(email, password);
+      
+      // Create user document in Firestore
+      if (userCredential?.user) {
+        await createUserDocument(userCredential.user.uid, {
+          uid: userCredential.user.uid,
+          email: email,
+          fullName: fullName,
+          onboardingCompleted: false,
+          platforms: [],
+          goals: [],
+          experience: "",
+          company: "",
+        });
+      }
+      
       router.push("/onboarding");
     } catch (err: any) {
       console.error(err);
