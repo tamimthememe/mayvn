@@ -109,6 +109,16 @@ export default function DashboardPage() {
     },
   ]
 
+  const socialConnections = [
+    {
+      name: "Instagram",
+      icon: "📷",
+      connected: false,
+      href: "/dashboard/connectinstagram",
+      gradient: "from-pink-500 via-purple-500 to-orange-500",
+    },
+  ]
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Sidebar */}
@@ -238,6 +248,39 @@ export default function DashboardPage() {
                 </Link>
               )
             })}
+          </div>
+        </div>
+
+        {/* Social Connections */}
+        <div className="mb-8">
+          <h3 className="text-xl font-bold mb-4">Connect Your Platforms</h3>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {socialConnections.map((platform, i) => (
+              <Link key={i} href={platform.href}>
+                <Card className="border-border/50 bg-card/50 backdrop-blur-sm p-6 hover:border-primary/50 transition-all duration-300 cursor-pointer group h-full relative overflow-hidden">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${platform.gradient} opacity-5 group-hover:opacity-10 transition-opacity`}></div>
+                  <div className="relative">
+                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${platform.gradient} p-2.5 mb-4 group-hover:scale-110 transition-transform flex items-center justify-center text-2xl`}>
+                      {platform.icon}
+                    </div>
+                    <p className="font-medium mb-2">{platform.name}</p>
+                    <div className="flex items-center gap-2">
+                      {platform.connected ? (
+                        <span className="text-xs text-green-500 flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                          Connected
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-muted-foreground/50"></span>
+                          Not Connected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              </Link>
+            ))}
           </div>
         </div>
 
