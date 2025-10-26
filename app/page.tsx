@@ -94,7 +94,7 @@ export default function LandingPage() {
                 Sign In
               </Button>
             </Link>
-            <Link href="/onboarding">
+            <Link href="/register">
               <Button size="sm" className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
                 Get Started
               </Button>
