@@ -258,7 +258,7 @@ export function getDemoProfile(): ScrapedInstagramProfile {
         id: '5',
         shortcode: 'demo5',
         imageUrl: 'https://images.unsplash.com/photo-1552581234-26160f608093?w=400&h=400&fit=crop',
-        caption: 'Team meeting vibes ☕️📊 What's your favorite workspace setup?',
+        caption: "Team meeting vibes ☕️📊 What's your favorite workspace setup?",
         likes: 4100,
         comments: 89,
         timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
