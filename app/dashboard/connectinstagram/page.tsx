@@ -29,8 +29,8 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { ScrapedInstagramProfile } from "@/lib/instagram-scraper"
-import { formatCount, getRelativeTime, calculateEngagementRate, getAverageLikes, getAverageComments } from "@/lib/instagram-scraper"
+import type { ScrapedInstagramProfile } from "@/lib/instagram-utils"
+import { formatCount, getRelativeTime, calculateEngagementRate, getAverageLikes, getAverageComments } from "@/lib/instagram-utils"
 
 export default function ConnectInstagramPage() {
   const [username, setUsername] = useState("")

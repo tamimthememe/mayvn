@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { scrapeInstagramProfile, isValidUsername } from '@/lib/instagram-scraper'
+import { scrapeInstagramProfile } from '@/lib/instagram-scraper'
+import { isValidUsername } from '@/lib/instagram-utils'
 
 /**
  * Instagram Profile Scraper API

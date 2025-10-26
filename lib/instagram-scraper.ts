@@ -1,34 +1,16 @@
 /**
- * Instagram Public Data Scraper
+ * Instagram Public Data Scraper (Server-Side Only)
  * 
  * Fetches publicly available Instagram profile data without requiring authentication.
  * Works by parsing Instagram's public profile pages.
+ * 
+ * NOTE: This file contains server-side code and should only be imported in API routes.
+ * For client-side utilities, use @/lib/instagram-utils
  */
 
-export interface ScrapedInstagramProfile {
-  username: string
-  fullName: string
-  bio: string
-  profilePicUrl: string
-  isVerified: boolean
-  isPrivate: boolean
-  followersCount: number
-  followingCount: number
-  postsCount: number
-  posts: ScrapedInstagramPost[]
-}
+import type { ScrapedInstagramProfile, ScrapedInstagramPost } from './instagram-utils'
 
-export interface ScrapedInstagramPost {
-  id: string
-  shortcode: string
-  imageUrl: string
-  caption: string
-  likes: number
-  comments: number
-  timestamp: string
-  isVideo: boolean
-  videoViews?: number
-}
+export type { ScrapedInstagramProfile, ScrapedInstagramPost }
 
 /**
  * Scrape Instagram profile data
@@ -200,107 +182,6 @@ export async function scrapeInstagramProfile(username: string): Promise<ScrapedI
     console.error('Instagram scraping error:', error)
     throw error
   }
-}
-
-/**
- * Validate Instagram username format
- * 
- * @param username - Username to validate
- * @returns Whether username is valid
- */
-export function isValidUsername(username: string): boolean {
-  const cleanUsername = username.replace('@', '').trim()
-  // Instagram usernames: 1-30 chars, alphanumeric, periods, underscores
-  const regex = /^[a-zA-Z0-9._]{1,30}$/
-  return regex.test(cleanUsername)
-}
-
-/**
- * Calculate engagement rate from profile data
- * 
- * @param profile - Scraped profile data
- * @returns Engagement rate percentage
- */
-export function calculateEngagementRate(profile: ScrapedInstagramProfile): number {
-  if (profile.posts.length === 0 || profile.followersCount === 0) {
-    return 0
-  }
-
-  const totalEngagement = profile.posts.reduce(
-    (sum, post) => sum + post.likes + post.comments,
-    0
-  )
-  
-  const avgEngagement = totalEngagement / profile.posts.length
-  const engagementRate = (avgEngagement / profile.followersCount) * 100
-
-  return Math.round(engagementRate * 10) / 10 // Round to 1 decimal
-}
-
-/**
- * Get average likes per post
- * 
- * @param posts - Array of posts
- * @returns Average likes
- */
-export function getAverageLikes(posts: ScrapedInstagramPost[]): number {
-  if (posts.length === 0) return 0
-  const total = posts.reduce((sum, post) => sum + post.likes, 0)
-  return Math.round(total / posts.length)
-}
-
-/**
- * Get average comments per post
- * 
- * @param posts - Array of posts
- * @returns Average comments
- */
-export function getAverageComments(posts: ScrapedInstagramPost[]): number {
-  if (posts.length === 0) return 0
-  const total = posts.reduce((sum, post) => sum + post.comments, 0)
-  return Math.round(total / posts.length)
-}
-
-/**
- * Format large numbers for display
- * 
- * @param num - Number to format
- * @returns Formatted string (e.g., "1.2K", "2.5M")
- */
-export function formatCount(num: number): string {
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + 'M'
-  }
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'K'
-  }
-  return num.toLocaleString()
-}
-
-/**
- * Get relative time string
- * 
- * @param timestamp - ISO timestamp string
- * @returns Relative time (e.g., "2 hours ago")
- */
-export function getRelativeTime(timestamp: string): string {
-  const now = new Date()
-  const past = new Date(timestamp)
-  const diffMs = now.getTime() - past.getTime()
-  
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffMs / 86400000)
-  const diffWeeks = Math.floor(diffMs / 604800000)
-  const diffMonths = Math.floor(diffMs / 2592000000)
-  
-  if (diffMins < 1) return 'Just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  if (diffWeeks < 4) return `${diffWeeks}w ago`
-  if (diffMonths < 12) return `${diffMonths}mo ago`
-  return past.toLocaleDateString()
 }
 
 /**
