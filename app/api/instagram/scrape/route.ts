@@ -13,6 +13,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { username } = body
 
+    console.log('[Instagram Scraper] Fetching profile for:', username)
+
     // Validate username
     if (!username) {
       return NextResponse.json(
@@ -29,7 +31,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Scrape the profile
+    console.log('[Instagram Scraper] Starting scrape...')
     const profile = await scrapeInstagramProfile(username)
+    console.log('[Instagram Scraper] Scrape successful! Posts found:', profile.posts.length)
 
     // Check if profile is private
     if (profile.isPrivate && profile.posts.length === 0) {
@@ -53,7 +57,11 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Instagram scraping error:', error)
+    console.error('[Instagram Scraper] Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    })
 
     // Handle specific errors
     if (error.message?.includes('not found')) {
@@ -63,16 +71,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (error.message?.includes('rate limit')) {
+    if (error.message?.includes('rate limit') || error.message?.includes('blocking')) {
       return NextResponse.json(
-        { error: 'Too many requests. Please try again in a few minutes.' },
+        { error: 'Instagram is currently blocking requests. This is a known limitation. Please try using a third-party service or wait a few minutes.' },
         { status: 429 }
       )
     }
 
-    // Generic error
+    // Generic error with more details
     return NextResponse.json(
-      { error: 'Failed to fetch Instagram profile. Please try again.' },
+      { 
+        error: 'Failed to fetch Instagram profile. Instagram may be blocking scraping requests.',
+        details: error.message 
+      },
       { status: 500 }
     )
   }

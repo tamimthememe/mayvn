@@ -183,6 +183,16 @@ export default function ConnectInstagramPage() {
                     />
                   </div>
 
+                  {/* Demo tip */}
+                  {!error && (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/50 text-blue-500">
+                      <Sparkles className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm">
+                        💡 Tip: Try <code className="px-1 py-0.5 bg-blue-500/20 rounded">demo</code> to see a sample profile
+                      </span>
+                    </div>
+                  )}
+
                   {/* Error message */}
                   {error && (
                     <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/50 text-red-500">
