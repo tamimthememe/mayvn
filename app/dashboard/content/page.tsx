@@ -91,7 +91,7 @@ export default function ContentGenerationPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-2 gap-6">
           {/* Input Panel */}
           <div className="space-y-6">
             <Card className="border-primary/20 bg-card/50 backdrop-blur-sm p-6">

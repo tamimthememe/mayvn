@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react"
+import { ArrowRight, ArrowLeft, Check, Sparkles, Instagram, Linkedin, Facebook, Twitter, Youtube } from "lucide-react"
 import Link from "next/link"
 
 export default function OnboardingPage() {
@@ -46,12 +46,12 @@ export default function OnboardingPage() {
   ]
 
   const platforms = [
-    { id: "instagram", name: "Instagram", icon: "📷" },
-    { id: "tiktok", name: "TikTok", icon: "🎵" },
-    { id: "twitter", name: "Twitter/X", icon: "𝕏" },
-    { id: "linkedin", name: "LinkedIn", icon: "💼" },
-    { id: "facebook", name: "Facebook", icon: "f" },
-    { id: "youtube", name: "YouTube", icon: "▶️" },
+    { id: "instagram", name: "Instagram", Icon: Instagram },
+    { id: "tiktok", name: "TikTok", Icon: null as any },
+    { id: "twitter", name: "Twitter/X", Icon: Twitter },
+    { id: "linkedin", name: "LinkedIn", Icon: Linkedin },
+    { id: "facebook", name: "Facebook", Icon: Facebook },
+    { id: "youtube", name: "YouTube", Icon: Youtube },
   ]
 
   const goals = [
@@ -117,7 +117,7 @@ export default function OnboardingPage() {
         ></div>
       </div>
 
-      <div className="relative min-h-screen flex items-center justify-center px-4 py-8">
+      <div className="relative min-h-screen flex items-start sm:items-center justify-center px-4 pt-24 sm:pt-0 pb-12">
         <div className="w-full max-w-2xl">
           {/* Progress bar */}
           <div className="mb-8">
@@ -137,7 +137,7 @@ export default function OnboardingPage() {
           </div>
 
           {/* Main card */}
-          <Card className="border-primary/20 bg-card/50 backdrop-blur-sm p-8 sm:p-12">
+          <Card className="border-primary/20 bg-card/50 backdrop-blur-sm p-6 sm:p-10">
             {/* Step 0: Welcome */}
             {currentStep === 0 && (
               <div className="space-y-8 text-center animate-fade-in">
@@ -147,8 +147,8 @@ export default function OnboardingPage() {
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold mb-4">{steps[0].title}</h1>
-                  <p className="text-lg text-muted-foreground">{steps[0].description}</p>
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">{steps[0].title}</h1>
+                  <p className="text-base sm:text-lg text-muted-foreground">{steps[0].description}</p>
                 </div>
                 <div className="space-y-4 pt-4">
                   <p className="text-muted-foreground">
@@ -177,7 +177,7 @@ export default function OnboardingPage() {
             {currentStep === 1 && (
               <div className="space-y-6 animate-fade-in">
                 <div>
-                  <h2 className="text-3xl font-bold mb-2">{steps[1].title}</h2>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{steps[1].title}</h2>
                   <p className="text-muted-foreground">{steps[1].description}</p>
                 </div>
                 <div className="space-y-4">
@@ -217,7 +217,7 @@ export default function OnboardingPage() {
             {currentStep === 2 && (
               <div className="space-y-6 animate-fade-in">
                 <div>
-                  <h2 className="text-3xl font-bold mb-2">{steps[2].title}</h2>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{steps[2].title}</h2>
                   <p className="text-muted-foreground">{steps[2].description}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -231,7 +231,11 @@ export default function OnboardingPage() {
                           : "border-border/50 bg-card/50 hover:border-primary/50"
                       }`}
                     >
-                      <span className="text-2xl">{platform.icon}</span>
+                      {platform.Icon ? (
+                        <platform.Icon className="w-5 h-5" />
+                      ) : (
+                        <div className="w-5 h-5 rounded-sm bg-white text-black text-[10px] font-bold flex items-center justify-center">T</div>
+                      )}
                       <span className="font-medium">{platform.name}</span>
                       {formData.platforms.includes(platform.id) && <Check className="w-5 h-5 ml-auto text-primary" />}
                     </button>
@@ -244,7 +248,7 @@ export default function OnboardingPage() {
             {currentStep === 3 && (
               <div className="space-y-6 animate-fade-in">
                 <div>
-                  <h2 className="text-3xl font-bold mb-2">{steps[3].title}</h2>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{steps[3].title}</h2>
                   <p className="text-muted-foreground">{steps[3].description}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -258,7 +262,7 @@ export default function OnboardingPage() {
                           : "border-border/50 bg-card/50 hover:border-accent/50"
                       }`}
                     >
-                      <span className="text-2xl">{goal.icon}</span>
+                      <span className="hidden sm:inline text-2xl">{goal.icon}</span>
                       <span className="font-medium text-sm">{goal.name}</span>
                       {formData.goals.includes(goal.id) && <Check className="w-5 h-5 ml-auto text-accent" />}
                     </button>
@@ -271,7 +275,7 @@ export default function OnboardingPage() {
             {currentStep === 4 && (
               <div className="space-y-6 animate-fade-in">
                 <div>
-                  <h2 className="text-3xl font-bold mb-2">{steps[4].title}</h2>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{steps[4].title}</h2>
                   <p className="text-muted-foreground">{steps[4].description}</p>
                 </div>
                 <div className="space-y-3">
@@ -316,8 +320,8 @@ export default function OnboardingPage() {
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold mb-4">{steps[5].title}</h1>
-                  <p className="text-lg text-muted-foreground mb-6">{steps[5].description}</p>
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-4">{steps[5].title}</h1>
+                  <p className="text-base sm:text-lg text-muted-foreground mb-6">{steps[5].description}</p>
                   <div className="bg-card/50 border border-primary/20 rounded-lg p-6 text-left space-y-3">
                     <div className="flex items-center gap-3">
                       <Check className="w-5 h-5 text-secondary" />
@@ -337,18 +341,18 @@ export default function OnboardingPage() {
             )}
 
             {/* Navigation buttons */}
-            <div className="flex gap-4 mt-8 pt-8 border-t border-border/50">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-8 pt-8 border-t border-border/50">
               <Button
                 variant="outline"
                 onClick={handlePrev}
                 disabled={currentStep === 0}
-                className="flex-1 border-border/50 bg-transparent"
+                className="w-full sm:flex-1 border-border/50 bg-transparent"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
               {currentStep === steps.length - 1 ? (
-                <Link href="/dashboard" className="flex-1">
+                <Link href="/dashboard" className="w-full sm:flex-1">
                   <Button className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90">
                     Go to Dashboard
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -358,7 +362,7 @@ export default function OnboardingPage() {
                 <Button
                   onClick={handleNext}
                   disabled={!isStepValid()}
-                  className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                  className="w-full sm:flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90"
                 >
                   Next
                   <ArrowRight className="w-4 h-4 ml-2" />

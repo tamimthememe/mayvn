@@ -175,7 +175,7 @@ export default function EngagementPage() {
                 return (
                   <Card
                     key={i}
-                    className="border-border/50 bg-card/50 backdrop-blur-sm p-6 hover:border-primary/50 transition-all duration-300 group"
+                    className="border-border/50 bg-card/70 backdrop-blur-sm p-6 hover:border-primary/50 transition-all duration-300 group"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div
@@ -187,7 +187,11 @@ export default function EngagementPage() {
                     <p className="text-sm text-muted-foreground mb-1">{metric.label}</p>
                     <div className="flex items-baseline gap-2">
                       <h3 className="text-3xl font-bold">{metric.value}</h3>
-                      <span className="text-sm text-secondary">{metric.change}</span>
+                      <span className={`text-sm ${
+                        metric.change.startsWith('+') ? 'text-green-500' : 
+                        metric.change.startsWith('-') ? 'text-red-500' : 
+                        'text-secondary'
+                      }`}>{metric.change}</span>
                     </div>
                   </Card>
                 )
@@ -196,7 +200,7 @@ export default function EngagementPage() {
 
             {/* Engagement Trends */}
             <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="border-border/50 bg-card/50 backdrop-blur-sm p-6">
+              <Card className="border-border/50 bg-card/70 backdrop-blur-sm p-6">
                 <h3 className="text-lg font-bold mb-4">Engagement Trend</h3>
                 <div className="space-y-4">
                   {[
@@ -224,7 +228,7 @@ export default function EngagementPage() {
                 </div>
               </Card>
 
-              <Card className="border-border/50 bg-card/50 backdrop-blur-sm p-6">
+              <Card className="border-border/50 bg-card/70 backdrop-blur-sm p-6">
                 <h3 className="text-lg font-bold mb-4">Top Performing Posts</h3>
                 <div className="space-y-3">
                   {[
@@ -320,7 +324,7 @@ export default function EngagementPage() {
           <div className="space-y-6">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {audienceInsights.map((insight, i) => (
-                <Card key={i} className="border-border/50 bg-card/50 backdrop-blur-sm p-6">
+                <Card key={i} className="border-border/50 bg-card/70 backdrop-blur-sm p-6">
                   <p className="text-sm text-muted-foreground mb-2">{insight.label}</p>
                   <h3 className="text-3xl font-bold mb-1">{insight.value}</h3>
                   <p className="text-xs text-secondary">{insight.change}</p>
@@ -329,7 +333,7 @@ export default function EngagementPage() {
             </div>
 
             <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="border-border/50 bg-card/50 backdrop-blur-sm p-6">
+              <Card className="border-border/50 bg-card/70 backdrop-blur-sm p-6">
                 <h3 className="text-lg font-bold mb-4">Audience by Age</h3>
                 <div className="space-y-3">
                   {[
@@ -355,7 +359,7 @@ export default function EngagementPage() {
                 </div>
               </Card>
 
-              <Card className="border-border/50 bg-card/50 backdrop-blur-sm p-6">
+              <Card className="border-border/50 bg-card/70 backdrop-blur-sm p-6">
                 <h3 className="text-lg font-bold mb-4">Top Locations</h3>
                 <div className="space-y-2">
                   {[
@@ -390,7 +394,7 @@ export default function EngagementPage() {
             </Card>
 
             {personalizationRules.map((rule) => (
-              <Card key={rule.id} className="border-border/50 bg-card/50 backdrop-blur-sm p-6">
+              <Card key={rule.id} className="border-border/50 bg-card/70 backdrop-blur-sm p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h4 className="font-semibold mb-1">{rule.name}</h4>
@@ -411,7 +415,7 @@ export default function EngagementPage() {
               </Card>
             ))}
 
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm p-6">
+            <Card className="border-border/50 bg-card/70 backdrop-blur-sm p-6">
               <h4 className="font-semibold mb-4">Brand Voice Settings</h4>
               <div className="space-y-4">
                 <div>
