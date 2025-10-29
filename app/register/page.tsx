@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Sparkles, Mail, Lock, User, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createUserDocument } from "@/lib/userService";
+import Image from "next/image";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -68,12 +69,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <span className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-            Mayvn
-          </span>
+          <Image src="/logo-full.png" alt="Mayvn Logo" width={200} height={40} />
         </Link>
 
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm p-8">
