@@ -1,4 +1,4 @@
-# 🚀 Quick Start - Instagram Connection Feature
+# 🚀 Quick Start - Instagram Connection Feature.
 
 ## Get Started in 3 Minutes
 
