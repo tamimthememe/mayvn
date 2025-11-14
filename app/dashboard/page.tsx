@@ -243,6 +243,7 @@ export default function DashboardPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
   const isMobile = useIsMobile()
+
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* Sidebar */}
