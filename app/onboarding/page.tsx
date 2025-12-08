@@ -1,39 +1,65 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { ArrowRight, ArrowLeft, Check, Sparkles, Instagram, Linkedin, Facebook, Twitter, Youtube } from "lucide-react"
+import { ArrowRight, ArrowLeft, Check, Sparkles, Instagram, Linkedin, Facebook, Twitter, Youtube, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/AuthContext"
-import { updateUserOnboarding } from "@/lib/userService"
+import { useBrand } from "@/contexts/BrandContext"
+import { updateUserExperience, createBrandDocument } from "@/lib/userService"
 import Image from "next/image"
+
+interface BrandDNA {
+  accent_color: string
+  brand_name: string
+  brand_values: string[]
+  business_overview: string
+  colors: string[]
+  fonts: string[]
+  images: string[]
+  logo: {
+    logo: string
+    logo_small: string
+  }
+  main_font: string
+  tagline: string
+  target_audience: string[]
+  tone_of_voice: string[]
+}
 
 export default function OnboardingPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const { refreshBrands, setSelectedBrandId } = useBrand()
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [brandDNA, setBrandDNA] = useState<BrandDNA | null>(null)
   const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    company: "",
     platforms: [] as string[],
     goals: [] as string[],
     experience: "",
   })
 
+  // Load brand DNA from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedDNA = localStorage.getItem('brandDNA')
+      if (storedDNA) {
+        try {
+          const data = JSON.parse(storedDNA)
+          setBrandDNA(data)
+        } catch (err) {
+          console.error('Failed to parse stored brand DNA:', err)
+        }
+      }
+    }
+  }, [])
+
   const steps = [
-    {
-      title: "Welcome to Mayvn",
-      description: "Let's get you set up in just a few minutes",
-    },
-    {
-      title: "Tell us about yourself",
-      description: "Help us personalize your experience",
-    },
     {
       title: "Choose your platforms",
       description: "Select where you want to automate",
@@ -104,20 +130,51 @@ export default function OnboardingPage() {
       return
     }
 
+    if (!brandDNA) {
+      setError("Brand DNA not found. Please go back and extract your brand DNA first.")
+      return
+    }
+
     try {
       setLoading(true)
-      await updateUserOnboarding(
-        user.uid,
-        formData.platforms,
-        formData.goals,
-        formData.experience,
-        formData.company
-      )
+      
+      // Update user experience (user-level)
+      if (formData.experience) {
+        await updateUserExperience(user.uid, formData.experience)
+      }
+
+      // Create brand document with brand DNA + onboarding data
+      const brandId = await createBrandDocument(user.uid, {
+        brand_name: brandDNA.brand_name,
+        tagline: brandDNA.tagline,
+        brand_values: brandDNA.brand_values || [],
+        business_overview: brandDNA.business_overview,
+        colors: brandDNA.colors || [],
+        fonts: brandDNA.fonts || [],
+        images: brandDNA.images || [],
+        logo: brandDNA.logo,
+        main_font: brandDNA.main_font,
+        accent_color: brandDNA.accent_color,
+        target_audience: brandDNA.target_audience || [],
+        tone_of_voice: brandDNA.tone_of_voice || [],
+        platforms: formData.platforms,
+        goals: formData.goals,
+        company: brandDNA.brand_name, // Use brand name as company
+      })
+
+      // Clear brand DNA from localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('brandDNA')
+      }
+
+      // Refresh brands and select the newly created brand
+      await refreshBrands()
+      setSelectedBrandId(brandId)
+
       router.push("/dashboard")
     } catch (error) {
       console.error("Error completing onboarding:", error)
-      // Still navigate to dashboard even if there's an error
-      router.push("/dashboard")
+      setError("Failed to save onboarding data. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -125,13 +182,11 @@ export default function OnboardingPage() {
 
   const isStepValid = () => {
     switch (currentStep) {
-      case 1:
-        return formData.fullName && formData.email && formData.company
-      case 2:
+      case 0:
         return formData.platforms.length > 0
-      case 3:
+      case 1:
         return formData.goals.length > 0
-      case 4:
+      case 2:
         return formData.experience
       default:
         return true
@@ -170,87 +225,31 @@ export default function OnboardingPage() {
 
           {/* Main card */}
           <Card className="border-primary/20 bg-card/50 backdrop-blur-sm p-6 sm:p-10">
-            {/* Step 0: Welcome */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-500">{error}</p>
+              </div>
+            )}
+            
+            {!brandDNA && (
+              <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                  No brand DNA found. Please extract your brand DNA first before completing onboarding.
+                </p>
+                <Link href="/brand-dna">
+                  <Button variant="outline" size="sm" className="mt-3">
+                    Go to Brand DNA
+                  </Button>
+                </Link>
+              </div>
+            )}
+            {/* Step 0: Platforms */}
             {currentStep === 0 && (
-              <div className="space-y-8 text-center animate-fade-in">
-                <div className="flex justify-center">
-              
-                    <Image src="/logo-small.png" alt="Mayvn Logo" width={80} height={40} />
-                  
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">{steps[0].title}</h1>
-                  <p className="text-base sm:text-lg text-muted-foreground">{steps[0].description}</p>
-                </div>
-                <div className="space-y-4 pt-4">
-                  <p className="text-muted-foreground">
-                    Join thousands of creators automating their marketing with AI-powered content generation and
-                    scheduling.
-                  </p>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                      <div className="font-semibold text-primary">10K+</div>
-                      <div className="text-muted-foreground">Campaigns</div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-secondary/10 border border-secondary/20">
-                      <div className="font-semibold text-secondary">500K+</div>
-                      <div className="text-muted-foreground">Posts</div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
-                      <div className="font-semibold text-accent">3.5x</div>
-                      <div className="text-muted-foreground">Engagement</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 1: Personal Info */}
-            {currentStep === 1 && (
               <div className="space-y-6 animate-fade-in">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{steps[1].title}</h2>
-                  <p className="text-muted-foreground">{steps[1].description}</p>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Full Name</label>
-                    <Input
-                      placeholder="John Doe"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="bg-input border-border/50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Email</label>
-                    <Input
-                      type="email"
-                      placeholder="john@example.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="bg-input border-border/50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Company/Brand Name</label>
-                    <Input
-                      placeholder="Your Company"
-                      value={formData.company}
-                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                      className="bg-input border-border/50"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Platforms */}
-            {currentStep === 2 && (
-              <div className="space-y-6 animate-fade-in">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{steps[2].title}</h2>
-                  <p className="text-muted-foreground">{steps[2].description}</p>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{steps[0].title}</h2>
+                  <p className="text-muted-foreground">{steps[0].description}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {platforms.map((platform) => (
@@ -276,12 +275,12 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Step 3: Goals */}
-            {currentStep === 3 && (
+            {/* Step 1: Goals */}
+            {currentStep === 1 && (
               <div className="space-y-6 animate-fade-in">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{steps[3].title}</h2>
-                  <p className="text-muted-foreground">{steps[3].description}</p>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{steps[1].title}</h2>
+                  <p className="text-muted-foreground">{steps[1].description}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {goals.map((goal) => (
@@ -303,48 +302,50 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Step 4: Experience */}
-            {currentStep === 4 && (
+            {/* Step 2: Experience */}
+            {currentStep === 2 && (
               <div className="space-y-6 animate-fade-in">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{steps[4].title}</h2>
-                  <p className="text-muted-foreground">{steps[4].description}</p>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{steps[2].title}</h2>
+                  <p className="text-muted-foreground">{steps[2].description}</p>
                 </div>
-                <div className="space-y-3">
-                  {[
-                    { id: "beginner", label: "I'm new to marketing automation" },
-                    { id: "intermediate", label: "I have some experience" },
-                    { id: "advanced", label: "I'm an experienced marketer" },
-                  ].map((option) => (
-                    <button
-                      key={option.id}
-                      onClick={() => setFormData({ ...formData, experience: option.id })}
-                      className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-left ${
-                        formData.experience === option.id
-                          ? "border-secondary bg-secondary/10"
-                          : "border-border/50 bg-card/50 hover:border-secondary/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                            formData.experience === option.id ? "border-secondary bg-secondary" : "border-border"
-                          }`}
-                        >
-                          {formData.experience === option.id && (
-                            <div className="w-2 h-2 bg-secondary-foreground rounded-full"></div>
-                          )}
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    {[
+                      { id: "beginner", label: "I'm new to marketing automation" },
+                      { id: "intermediate", label: "I have some experience" },
+                      { id: "advanced", label: "I'm an experienced marketer" },
+                    ].map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => setFormData({ ...formData, experience: option.id })}
+                        className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                          formData.experience === option.id
+                            ? "border-secondary bg-secondary/10"
+                            : "border-border/50 bg-card/50 hover:border-secondary/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              formData.experience === option.id ? "border-secondary bg-secondary" : "border-border"
+                            }`}
+                          >
+                            {formData.experience === option.id && (
+                              <div className="w-2 h-2 bg-secondary-foreground rounded-full"></div>
+                            )}
+                          </div>
+                          <span className="font-medium">{option.label}</span>
                         </div>
-                        <span className="font-medium">{option.label}</span>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Step 5: Complete */}
-            {currentStep === 5 && (
+            {/* Step 3: Complete */}
+            {currentStep === 3 && (
               <div className="space-y-8 text-center animate-fade-in">
                 <div className="flex justify-center">
                   <div className="w-16 h-16 bg-gradient-to-br from-secondary to-accent rounded-2xl flex items-center justify-center animate-bounce">
@@ -352,16 +353,16 @@ export default function OnboardingPage() {
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-3xl sm:text-4xl font-bold mb-4">{steps[5].title}</h1>
-                  <p className="text-base sm:text-lg text-muted-foreground mb-6">{steps[5].description}</p>
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-4">{steps[3].title}</h1>
+                  <p className="text-base sm:text-lg text-muted-foreground mb-6">{steps[3].description}</p>
                   <div className="bg-card/50 border border-primary/20 rounded-lg p-6 text-left space-y-3">
                     <div className="flex items-center gap-3">
                       <Check className="w-5 h-5 text-secondary" />
-                      <span>Account created for {formData.email}</span>
+                      <span>Account setup complete</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <Check className="w-5 h-5 text-secondary" />
-                      <span>{formData.platforms.length} platforms connected</span>
+                      <span>{formData.platforms.length} platforms selected</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <Check className="w-5 h-5 text-secondary" />

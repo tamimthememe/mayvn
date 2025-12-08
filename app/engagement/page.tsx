@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Sparkles, Heart, Share2, MessageCircle } from "lucide-react"
+import { Sidebar } from "@/components/Sidebar"
 
 export default function EngagementPage() {
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true)
@@ -75,46 +76,9 @@ export default function EngagementPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="fixed left-0 top-0 w-64 h-screen bg-card border-r border-border p-6 flex flex-col">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold">Mayvn</span>
-        </div>
+      <Sidebar />
 
-        <nav className="flex-1 space-y-2">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-card-foreground/10 transition-colors"
-          >
-            <span>📊 Dashboard</span>
-          </Link>
-          <Link
-            href="/campaigns"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-card-foreground/10 transition-colors"
-          >
-            <span>📅 Campaigns</span>
-          </Link>
-          <Link
-            href="/content"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-card-foreground/10 transition-colors"
-          >
-            <span>✨ Content</span>
-          </Link>
-          <Link href="/engagement" className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary">
-            <span>💬 Engagement</span>
-          </Link>
-          <Link
-            href="/analytics"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-card-foreground/10 transition-colors"
-          >
-            <span>📈 Analytics</span>
-          </Link>
-        </nav>
-      </div>
-
-      <div className="ml-64 p-8">
+      <div className="md:ml-64 p-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Engagement Hub</h1>
           <p className="text-muted-foreground">Manage all your mentions, comments, and messages</p>

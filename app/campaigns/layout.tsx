@@ -21,6 +21,8 @@ import {
   Sparkles,
   Plus,
 } from "lucide-react"
+import { Sidebar } from "@/components/Sidebar"
+import { BrandSwitcher } from "@/components/BrandSwitcher"
 
 export default function CampaignsLayout({ children }: { children: React.ReactNode }) {
   const [cmdOpen, setCmdOpen] = useState(false)
@@ -42,33 +44,7 @@ export default function CampaignsLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* Sidebar */}
-      <div className="hidden md:flex fixed left-0 top-0 w-64 h-screen bg-card border-r border-border pb-6 pr-6 pl-6 flex-col">
-        <div className="mb-8">
-          <Image src="/logo-full.png" alt="Mayvn Logo" width={160} height={60} className="w-full h-auto" />
-        </div>
-        <nav className="flex-1 space-y-1">
-          <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
-            <LayoutDashboard className="w-5 h-5" />
-            <span>Dashboard</span>
-          </Link>
-          <Link href="/campaigns" className="flex items-center gap-3 px-4 py-3 rounded-lg bg-muted text-foreground">
-            <CalendarIcon className="w-5 h-5" />
-            <span>Campaigns</span>
-          </Link>
-          <Link href="/content" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
-            <FileText className="w-5 h-5" />
-            <span>Content</span>
-          </Link>
-          <Link href="/engagement" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
-            <MessageSquare className="w-5 h-5" />
-            <span>Engagement</span>
-          </Link>
-          <Link href="/analytics" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
-            <ChartBar className="w-5 h-5" />
-            <span>Analytics</span>
-          </Link>
-        </nav>
-      </div>
+      <Sidebar />
 
       {/* Header */}
       <header className="fixed top-0 left-0 md:left-64 right-0 border-b border-border/50 bg-card/30 backdrop-blur-sm z-40" suppressHydrationWarning>
@@ -83,7 +59,7 @@ export default function CampaignsLayout({ children }: { children: React.ReactNod
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72 p-0">
                   <div className="p-6 border-b border-border/50">
-                    <Image src="/logo-full.png" alt="Mayvn Logo" width={140} height={50} className="h-auto w-auto" />
+                    <BrandSwitcher />
                   </div>
                   <nav className="p-4 space-y-1">
                     <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
@@ -97,6 +73,17 @@ export default function CampaignsLayout({ children }: { children: React.ReactNod
                     <Link href="/content" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
                       <FileText className="w-5 h-5" />
                       <span>Content</span>
+                    </Link>
+                    <Link href="/engagement" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
+                      <MessageSquare className="w-5 h-5" />
+                      <span>Engagement</span>
+                    </Link>
+                    <Link href="/analytics" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
+                      <ChartBar className="w-5 h-5" />
+                      <span>Analytics</span>
+                    </Link>
+                    <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
+                      <span>Profile</span>
                     </Link>
                   </nav>
                 </SheetContent>

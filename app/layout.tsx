@@ -3,6 +3,8 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AuthProvider } from "@/contexts/AuthContext"
+import { BrandProvider } from "@/contexts/BrandContext"
+import { NotificationsProvider } from "@/contexts/NotificationsContext"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
@@ -29,10 +31,15 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Neue+Montreal:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Allura&family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&family=Pacifico&family=Satisfy&display=swap" rel="stylesheet" />
       </head>
       <body className={`${inter.variable} font-sans antialiased bg-background text-foreground`}>
         <AuthProvider>
-          {children}
+          <BrandProvider>
+            <NotificationsProvider>
+              {children}
+            </NotificationsProvider>
+          </BrandProvider>
         </AuthProvider>
         <Analytics />
       </body>

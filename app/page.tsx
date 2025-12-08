@@ -2,23 +2,73 @@
 
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { ArrowRight, ArrowLeft, Menu, Sparkles, Zap, BarChart3, MessageSquare, Calendar, Shield, Instagram, Linkedin, Facebook, Twitter, Youtube } from "lucide-react"
+import { ArrowRight, ArrowLeft, Menu, Sparkles, Zap, BarChart3, MessageSquare, Calendar, Shield, Instagram, Linkedin, Facebook, Twitter, Youtube, Loader2, Globe } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Image from "next/image"
 
 export default function LandingPage() {
+  const router = useRouter()
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeFeature, setActiveFeature] = useState(0)
   const [energize, setEnergize] = useState(false)
+
+  // Brand DNA states
+  const [websiteUrl, setWebsiteUrl] = useState("")
+  const [loadingDNA, setLoadingDNA] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50)
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  const handleScrapeBrandDNA = async () => {
+    if (!websiteUrl.trim()) {
+      setError("Please enter a valid website URL")
+      return
+    }
+
+    // Basic URL validation
+    try {
+      new URL(websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`)
+    } catch {
+      setError("Please enter a valid website URL")
+      return
+    }
+
+    setError(null)
+    setLoadingDNA(true)
+
+    try {
+      const urlToSend = websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`
+      const response = await fetch("http://localhost:5000/scrape", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url: urlToSend }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to scrape brand DNA")
+      }
+
+      const data = await response.json()
+      // Store brand DNA in localStorage and redirect to results page
+      localStorage.setItem('brandDNA', JSON.stringify(data))
+      setLoadingDNA(false)
+      router.push('/brand-dna')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to scrape brand DNA. Please try again.")
+      setLoadingDNA(false)
+    }
+  }
+
 
   const features = [
     {
@@ -160,31 +210,79 @@ export default function LandingPage() {
       {/* Hero Section - Simple Waitlist style */}
       <section className={`relative flex items-center justify-center min-h-[100svh] px-4 sm:px-6 lg:px-8 overflow-hidden hero ${energize ? 'hero-energize' : ''}`}>
         {/* star field */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_130%,rgba(4,114,134,0.15),transparent_65%)]"/>
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_130%,rgba(4,114,134,0.15),transparent_65%)]" />
         <div className="starfield">
           <div className="star-layer star-small"></div>
           <div className="star-layer star-medium"></div>
           <div className="star-layer star-large"></div>
         </div>
         {/* earth horizon glow */}
-        <div className="pointer-events-none absolute bottom-[-180px] left-1/2 -translate-x-1/2 w-[1400px] h-[360px] rounded-[50%] bg-gradient-to-t from-accent/30 via-accent/10 to-transparent blur-3xl"/>
-        
+        <div className="pointer-events-none absolute bottom-[-180px] left-1/2 -translate-x-1/2 w-[1400px] h-[360px] rounded-[50%] bg-gradient-to-t from-accent/30 via-accent/10 to-transparent blur-3xl" />
 
-        <div className="relative max-w-3xl mx-auto text-center space-y-2">
+
+        <div className="relative max-w-3xl mx-auto text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/60 border border-border/60 text-xs text-muted-foreground">Mayvn • Beta Access</div>
           <h1 className="text-5xl sm:text-6xl font-bold leading-tight">
-            Because great marketing <br/> shouldn’t feel <span className="italic text-muted-foreground font-instrument">like work.</span>
+            Because great marketing <br /> shouldn't feel <span className="italic text-muted-foreground font-instrument">like work.</span>
           </h1>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto">
-              Mayvn automates your campaigns from creation to engagement – powered by AI that learns your brand.
-            </p>
+          <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto">
+            Mayvn automates your campaigns from creation to engagement – powered by AI that learns your brand.
+          </p>
+
+          {/* Brand DNA Input Section */}
+          <div className="max-w-2xl mx-auto space-y-4 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 relative">
+                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Enter your website URL (e.g., example.com)"
+                  value={websiteUrl}
+                  onChange={(e) => {
+                    setWebsiteUrl(e.target.value)
+                    setError(null)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !loadingDNA && websiteUrl.trim()) {
+                      handleScrapeBrandDNA()
+                    }
+                  }}
+                  className="pl-12 h-12 text-base bg-card/60 border-border/50 backdrop-blur-sm"
+                  disabled={loadingDNA}
+                />
+              </div>
+              <Button
+                size="lg"
+                onClick={handleScrapeBrandDNA}
+                disabled={loadingDNA || !websiteUrl.trim()}
+                className="px-8 bg-accent hover:bg-accent/90 hover:shadow-[0_0_30px_rgba(4,114,134,0.55)] h-12"
+                onMouseEnter={() => setEnergize(true)}
+                onMouseLeave={() => setEnergize(false)}
+              >
+                {loadingDNA ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    Extract Brand DNA
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
+            {error && (
+              <p className="text-sm text-destructive text-left">{error}</p>
+            )}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <Link href="/onboarding">
                 <Button
                   size="lg"
-                  className="px-8 bg-accent hover:bg-accent/90 hover:shadow-[0_0_30px_rgba(4,114,134,0.55)]"
-                  onMouseEnter={()=> setEnergize(true)}
-                  onMouseLeave={()=> setEnergize(false)}
+                  variant="outline"
+                  className="px-8 border-primary/50 hover:bg-primary/10 hover:border-accent/60 hover:shadow-[0_0_18px_rgba(4,114,134,0.35)] transition-shadow"
+                  onMouseEnter={() => setEnergize(true)}
+                  onMouseLeave={() => setEnergize(false)}
                 >
                   Start Automating
                 </Button>
@@ -194,13 +292,14 @@ export default function LandingPage() {
                   size="lg"
                   variant="outline"
                   className="px-8 border-primary/50 hover:bg-primary/10 hover:border-accent/60 hover:shadow-[0_0_18px_rgba(4,114,134,0.35)] transition-shadow"
-                  onMouseEnter={()=> setEnergize(true)}
-                  onMouseLeave={()=> setEnergize(false)}
+                  onMouseEnter={() => setEnergize(true)}
+                  onMouseLeave={() => setEnergize(false)}
                 >
                   See It in Action
                 </Button>
               </Link>
             </div>
+          </div>
         </div>
       </section>
 
@@ -225,54 +324,54 @@ export default function LandingPage() {
           </div>
           <div className="relative overflow-hidden border-t border-b border-border/50 bg-card/30">
             {/* edge fades */}
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-background/80 to-transparent z-10"/>
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-background/80 to-transparent z-10"/>
-            <div className={`marquee-track marquee-rtl`}> 
-              {Array.from({length:2}).map((_,seg)=>{
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-background/80 to-transparent z-10" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-background/80 to-transparent z-10" />
+            <div className={`marquee-track marquee-rtl`}>
+              {Array.from({ length: 4 }).map((_, seg) => {
                 const cols = 14
                 const rows = 8
-                const images = ['/smp-1.jpg','/smp-2.jpeg','/smp-3.jpeg','/smp-4.jpg','/smp-5.jpeg','/smp-6.jpg']
+                const images = ['/smp-1.jpg', '/smp-2.jpeg', '/smp-3.jpeg', '/smp-4.jpg', '/smp-5.jpeg', '/smp-6.jpg']
                 // Predefined large squares (4x4) and mediums (2x2)
                 const preset = [
                   // frame bands 2x2
-                  ...[1,3,5,7,9,11].map((c,i)=>({ c, r:1, w:2, h:2, src: images[i%images.length] })),
-                  ...[1,13].flatMap((c)=>[
-                    { c, r:3, w:2, h:2, src: images[2] },
-                    { c, r:5, w:2, h:2, src: images[3] },
+                  ...[1, 3, 5, 7, 9, 11].map((c, i) => ({ c, r: 1, w: 2, h: 2, src: images[i % images.length] })),
+                  ...[1, 13].flatMap((c) => [
+                    { c, r: 3, w: 2, h: 2, src: images[2] },
+                    { c, r: 5, w: 2, h: 2, src: images[3] },
                   ]),
-                  ...[1,3,5,7,9,11].map((c,i)=>({ c, r:7, w:2, h:2, src: images[(i+1)%images.length] })),
+                  ...[1, 3, 5, 7, 9, 11].map((c, i) => ({ c, r: 7, w: 2, h: 2, src: images[(i + 1) % images.length] })),
                   // center big 4x4 and four 2x2 anchors
-                  { c:5, r:3, w:4, h:4, src: images[3] },
-                  { c:3, r:3, w:2, h:2, src: images[0] },
-                  { c:9, r:3, w:2, h:2, src: images[4] },
-                  { c:3, r:5, w:2, h:2, src: images[2] },
-                  { c:9, r:5, w:2, h:2, src: images[5] },
+                  { c: 5, r: 3, w: 4, h: 4, src: images[3] },
+                  { c: 3, r: 3, w: 2, h: 2, src: images[0] },
+                  { c: 9, r: 3, w: 2, h: 2, src: images[4] },
+                  { c: 3, r: 5, w: 2, h: 2, src: images[2] },
+                  { c: 9, r: 5, w: 2, h: 2, src: images[5] },
                 ]
                 // Occupancy map
                 const occupied = new Set<string>()
-                preset.forEach(t=>{
-                  for(let x=t.c; x<t.c+t.w; x++){
-                    for(let y=t.r; y<t.r+t.h; y++){
+                preset.forEach(t => {
+                  for (let x = t.c; x < t.c + t.w; x++) {
+                    for (let y = t.r; y < t.r + t.h; y++) {
                       occupied.add(`${x},${y}`)
                     }
                   }
                 })
                 const tiles = [...preset]
                 // Fill the rest with 1x1 squares
-                for(let y=1; y<=rows; y++){
-                  for(let x=1; x<=cols; x++){
-                    if(!occupied.has(`${x},${y}`)){
-                      tiles.push({ c:x, r:y, w:1, h:1, src: images[(x+y)%images.length] })
+                for (let y = 1; y <= rows; y++) {
+                  for (let x = 1; x <= cols; x++) {
+                    if (!occupied.has(`${x},${y}`)) {
+                      tiles.push({ c: x, r: y, w: 1, h: 1, src: images[(x + y) % images.length] })
                     }
                   }
                 }
                 return (
-                  <div key={seg} className="flex-none py-10" style={{ width: 'calc((75svh / 8) * 14)' }}>
+                  <div key={seg} className="flex-none py-10" style={{ width: 'calc(((75svh / 8) * 14) + (13 * 0.5rem))' }}>
                     <div
                       className="relative grid gap-2"
                       style={{ ['--cell' as any]: 'calc(75svh / 8)', gridTemplateColumns: 'repeat(14, var(--cell))', gridAutoRows: 'var(--cell)', height: '75svh' }}
                     >
-                      {tiles.map((t,i)=> (
+                      {tiles.map((t, i) => (
                         <div key={`tile-${seg}-${i}`} className="relative rounded-xl overflow-hidden" style={{ gridColumn: `${t.c} / span ${t.w}`, gridRow: `${t.r} / span ${t.h}` }}>
                           <Image src={t.src} alt="post" fill className="object-cover" />
                         </div>
@@ -286,8 +385,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-       {/* How It Works — Card Strip layout */}
-       <section id="how-it-works" className="relative py-24 px-0">
+      {/* How It Works — Card Strip layout */}
+      <section id="how-it-works" className="relative py-24 px-0">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 space-y-3">
             <h3 className="text-sm text-primary/80">How it works</h3>
@@ -299,33 +398,33 @@ export default function LandingPage() {
 
           {/* Mobile/Tablet: stacked */}
           <div className="relative grid grid-cols-1 gap-6 md:hidden">
-            <HowCard step={1} title="Create Campaign" desc="Define goals, audience, tone and platforms in minutes."/>
-            <HowCard step={2} title="Generate AI Content" desc="Auto‑create posts, captions, visuals and hashtags — all brand‑aligned."/>
-            <HowCard step={3} title="Refine" desc="Tweak tone, brand consistency and compliance before publishing." highlight/>
-            <HowCard step={4} title="Schedule & Engage" desc="Publish at the best time and keep conversations going with smart replies."/>
-            <HowCard step={5} title="Analyze & Optimize" desc="Measure results and let AI improve the next campaign automatically."/>
+            <HowCard step={1} title="Create Campaign" desc="Define goals, audience, tone and platforms in minutes." />
+            <HowCard step={2} title="Generate AI Content" desc="Auto‑create posts, captions, visuals and hashtags — all brand‑aligned." />
+            <HowCard step={3} title="Refine" desc="Tweak tone, brand consistency and compliance before publishing." highlight />
+            <HowCard step={4} title="Schedule & Engage" desc="Publish at the best time and keep conversations going with smart replies." />
+            <HowCard step={5} title="Analyze & Optimize" desc="Measure results and let AI improve the next campaign automatically." />
           </div>
 
           {/* Large screens (lg): 3 on top, 2 below */}
           <div className="hidden lg:block xl:hidden">
             <div className="grid grid-cols-3 gap-8 items-end">
-              <HowCard step={1} title="Create Campaign" desc="Define goals, audience, tone and platforms in minutes." className="mt-12"/>
-              <HowCard step={2} title="Generate AI Content" desc="Auto‑create posts, captions, visuals and hashtags — all brand‑aligned." className="mt-4"/>
-              <HowCard step={3} title="Refine" desc="Tweak tone, brand consistency and compliance before publishing." className="mt-0 shadow-xl" highlight/>
+              <HowCard step={1} title="Create Campaign" desc="Define goals, audience, tone and platforms in minutes." className="mt-12" />
+              <HowCard step={2} title="Generate AI Content" desc="Auto‑create posts, captions, visuals and hashtags — all brand‑aligned." className="mt-4" />
+              <HowCard step={3} title="Refine" desc="Tweak tone, brand consistency and compliance before publishing." className="mt-0 shadow-xl" highlight />
             </div>
             <div className="grid grid-cols-2 gap-8 items-end mt-8 max-w-4xl mx-auto">
-              <HowCard step={4} title="Schedule & Engage" desc="Publish at the best time and keep conversations going with smart replies." className="mt-8"/>
-              <HowCard step={5} title="Analyze & Optimize" desc="Measure results and let AI improve the next campaign automatically." className="mt-8"/>
+              <HowCard step={4} title="Schedule & Engage" desc="Publish at the best time and keep conversations going with smart replies." className="mt-8" />
+              <HowCard step={5} title="Analyze & Optimize" desc="Measure results and let AI improve the next campaign automatically." className="mt-8" />
             </div>
           </div>
 
           {/* XL and above: five across */}
           <div className="relative hidden xl:grid grid-cols-5 gap-6 xl:gap-8 items-end">
-            <HowCard step={1} title="Create Campaign" desc="Define goals, audience, tone and platforms in minutes." className="-rotate-6 mt-16"/>
-            <HowCard step={2} title="Generate AI Content" desc="Auto‑create posts, captions, visuals and hashtags — all brand‑aligned." className="-rotate-3 mt-8"/>
-            <HowCard step={3} title="Refine" desc="Tweak tone, brand consistency and compliance before publishing." className="scale-[1.02] shadow-xl mt-0" highlight/>
-            <HowCard step={4} title="Schedule & Engage" desc="Publish at the best time and keep conversations going with smart replies." className="rotate-3 mt-8"/>
-            <HowCard step={5} title="Analyze & Optimize" desc="Measure results and let AI improve the next campaign automatically." className="rotate-6 mt-16"/>
+            <HowCard step={1} title="Create Campaign" desc="Define goals, audience, tone and platforms in minutes." className="-rotate-6 mt-16" />
+            <HowCard step={2} title="Generate AI Content" desc="Auto‑create posts, captions, visuals and hashtags — all brand‑aligned." className="-rotate-3 mt-8" />
+            <HowCard step={3} title="Refine" desc="Tweak tone, brand consistency and compliance before publishing." className="scale-[1.02] shadow-xl mt-0" highlight />
+            <HowCard step={4} title="Schedule & Engage" desc="Publish at the best time and keep conversations going with smart replies." className="rotate-3 mt-8" />
+            <HowCard step={5} title="Analyze & Optimize" desc="Measure results and let AI improve the next campaign automatically." className="rotate-6 mt-16" />
           </div>
         </div>
       </section>
@@ -436,6 +535,21 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Brand DNA Loading Overlay */}
+      {loadingDNA && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="text-center space-y-6">
+            <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
+            <div>
+              <h3 className="text-2xl font-semibold mb-2">Analyzing Your Brand</h3>
+              <p className="text-muted-foreground">
+                We're extracting colors, fonts, brand values, and more from your website...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -536,8 +650,8 @@ function FeatureStrip() {
       >
         <ArrowRight className="h-5 w-5 mx-auto" />
       </button>
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-background to-transparent z-10"/>
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-background to-transparent z-10"/>
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-background to-transparent z-10" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-background to-transparent z-10" />
       <div
         ref={trackRef}
         className="group relative flex gap-10 overflow-x-auto no-scrollbar p-12 items-stretch scroll-smooth"
@@ -589,7 +703,7 @@ function StepCard({ index, title, desc }: { index: number; title: string; desc: 
 
   return (
     <div ref={ref} className="reveal-on-scroll relative bg-card/70 border border-border/60 rounded-2xl p-5 md:p-6 backdrop-blur-sm">
-      <div className="hidden md:block absolute left-1/2 -translate-x-1/2 -top-8 w-2 h-2 rounded-full bg-accent shadow-[0_0_0_4px_rgba(4,114,134,0.15)]"/>
+      <div className="hidden md:block absolute left-1/2 -translate-x-1/2 -top-8 w-2 h-2 rounded-full bg-accent shadow-[0_0_0_4px_rgba(4,114,134,0.15)]" />
       <div className="flex items-start gap-3">
         <div className="h-8 w-8 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-accent font-semibold">
           {index}
@@ -649,7 +763,7 @@ function HowCard({ step, title, desc, className = '', highlight = false }: { ste
       <p className="text-sm text-muted-foreground leading-relaxed mb-6">{desc}</p>
       <div className={`h-40 rounded-xl border ${highlight ? 'border-accent/50 bg-gradient-to-br from-primary/10 to-accent/10' : 'border-border/40 bg-muted/10'}`} />
       <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
-        <span className="h-2 w-2 rounded-full bg-accent/80"/>
+        <span className="h-2 w-2 rounded-full bg-accent/80" />
         <span>AI‑assisted • real‑time • brand‑aware</span>
       </div>
     </div>
