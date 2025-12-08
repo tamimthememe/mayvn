@@ -238,6 +238,7 @@ export default function PostGeneratorPage() {
   const gradientSliderRef = useRef<HTMLDivElement>(null)
   const [aiPromptInput, setAIPromptInput] = useState("")
   const [generatingAIPrompt, setGeneratingAIPrompt] = useState(false)
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
   const frameRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const dragOffsetRef = useRef({ x: 0, y: 0 })
   const dragStartPositionRef = useRef({ x: 0, y: 0 })
@@ -712,6 +713,60 @@ export default function PostGeneratorPage() {
       alert(errorMessage)
     } finally {
       setGeneratingAIPrompt(false)
+    }
+  }
+
+  const generateImage = async () => {
+    const selectedFrame = frames.find(f => f.id === selectedFrameId)
+    
+    if (!selectedFrameId || !selectedFrame?.styles?.backgroundAIPrompt) {
+      alert("Please generate a prompt first before generating an image.")
+      return
+    }
+
+    setIsGeneratingImage(true)
+    try {
+      // Step 3.1: Call the API endpoint
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: selectedFrame.styles.backgroundAIPrompt,
+          frameId: selectedFrameId,
+          width: selectedFrame.type.width,
+          height: selectedFrame.type.height,
+        }),
+      })
+
+      // Step 3.3: Handle errors - read error body for details
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.details || errorData.error || 'Failed to generate image')
+      }
+
+      const data = await response.json()
+
+      // Step 3.2: Update frame with image URL
+      if (data.success && data.imageUrl) {
+        // Update background type to 'image' if it's currently 'ai'
+        if (selectedFrame.styles?.backgroundType === 'ai') {
+          updateFrameStyle('backgroundType', 'image')
+        }
+        // Set the background image URL
+        updateFrameStyle('backgroundImage', data.imageUrl)
+      } else if (data.error) {
+        throw new Error(data.details || data.error)
+      } else {
+        throw new Error('No image URL returned')
+      }
+    } catch (error: any) {
+      console.error('Error generating image:', error)
+      const errorMessage = error.message || 'Failed to generate image. Please try again.'
+      alert(errorMessage)
+    } finally {
+      setIsGeneratingImage(false)
     }
   }
 
@@ -3128,17 +3183,38 @@ export default function PostGeneratorPage() {
                                             {selectedFrame.styles.backgroundAIPrompt}
                                           </p>
                                         </div>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="mt-2 w-full"
-                                          onClick={() => {
-                                            navigator.clipboard.writeText(selectedFrame.styles.backgroundAIPrompt || "")
-                                            alert("Prompt copied to clipboard!")
-                                          }}
-                                        >
-                                          Copy Prompt
-                                        </Button>
+                                        <div className="flex gap-2 mt-2">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="flex-1"
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(selectedFrame.styles.backgroundAIPrompt || "")
+                                              alert("Prompt copied to clipboard!")
+                                            }}
+                                          >
+                                            Copy Prompt
+                                          </Button>
+                                          <Button
+                                            variant="default"
+                                            size="sm"
+                                            className="flex-1"
+                                            onClick={generateImage}
+                                            disabled={isGeneratingImage}
+                                          >
+                                            {isGeneratingImage ? (
+                                              <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                Generating...
+                                              </>
+                                            ) : (
+                                              <>
+                                                <ImageIcon className="w-4 h-4 mr-2" />
+                                                Generate Image
+                                              </>
+                                            )}
+                                          </Button>
+                                        </div>
                                       </div>
                                     )}
                                   </div>
@@ -3863,17 +3939,38 @@ export default function PostGeneratorPage() {
                                           {selectedFrame.styles.backgroundAIPrompt}
                                         </p>
                                       </div>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="mt-2 w-full"
-                                        onClick={() => {
-                                          navigator.clipboard.writeText(selectedFrame.styles.backgroundAIPrompt || "")
-                                          alert("Prompt copied to clipboard!")
-                                        }}
-                                      >
-                                        Copy Prompt
-                                      </Button>
+                                      <div className="flex gap-2 mt-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="flex-1"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(selectedFrame.styles.backgroundAIPrompt || "")
+                                            alert("Prompt copied to clipboard!")
+                                          }}
+                                        >
+                                          Copy Prompt
+                                        </Button>
+                                        <Button
+                                          variant="default"
+                                          size="sm"
+                                          className="flex-1"
+                                          onClick={generateImage}
+                                          disabled={isGeneratingImage}
+                                        >
+                                          {isGeneratingImage ? (
+                                            <>
+                                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                              Generating...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <ImageIcon className="w-4 h-4 mr-2" />
+                                              Generate Image
+                                            </>
+                                          )}
+                                        </Button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
