@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
 
     // Define the Instagram permissions (scopes) you need
     const scopes = [
-      'user_profile',      // Access to user's profile info
-      'user_media',        // Access to user's media (posts)
+      'user_profile',
+      'user_media',
     ]
 
     // For Business/Creator accounts, you can request additional scopes:

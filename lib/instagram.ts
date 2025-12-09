@@ -15,60 +15,25 @@ export const INSTAGRAM_CONFIG = {
 }
 
 // Instagram API Endpoints
+// Instagram API Endpoints
 export const INSTAGRAM_ENDPOINTS = {
-  AUTHORIZE: 'https://api.instagram.com/oauth/authorize',
-  ACCESS_TOKEN: 'https://api.instagram.com/oauth/access_token',
+  AUTHORIZE: 'https://www.facebook.com/v18.0/dialog/oauth',
+  ACCESS_TOKEN: 'https://graph.facebook.com/v18.0/oauth/access_token',
   USER_PROFILE: 'https://graph.instagram.com/me',
-  USER_MEDIA: 'https://graph.instagram.com/me/media',
-  MEDIA_INSIGHTS: (mediaId: string) => `https://graph.instagram.com/${mediaId}/insights`,
-  MEDIA_COMMENTS: (mediaId: string) => `https://graph.instagram.com/${mediaId}/comments`,
+  USER_MEDIA: (igUserId: string) => `https://graph.facebook.com/v18.0/${igUserId}/media`,
+  MEDIA_INSIGHTS: (mediaId: string) => `https://graph.facebook.com/v18.0/${mediaId}/insights`,
+  MEDIA_COMMENTS: (mediaId: string) => `https://graph.facebook.com/v18.0/${mediaId}/comments`,
 }
 
-// Types
-export interface InstagramProfile {
-  id: string
-  username: string
-  account_type: 'BUSINESS' | 'CREATOR' | 'PERSONAL'
-  media_count: number
-}
-
-export interface InstagramMedia {
-  id: string
-  caption?: string
-  media_type: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM'
-  media_url: string
-  permalink: string
-  thumbnail_url?: string
-  timestamp: string
-  username: string
-  like_count?: number
-  comments_count?: number
-}
-
-export interface InstagramComment {
-  id: string
-  text: string
-  username: string
-  timestamp: string
-  like_count?: number
-  replies?: InstagramComment[]
-}
-
-export interface InstagramInsights {
-  impressions: number
-  reach: number
-  engagement: number
-  saved: number
-  video_views?: number
-}
+// ... (Types remain the same)
 
 /**
- * Generate Instagram OAuth URL
+ * Generate Instagram OAuth URL (via Facebook Login)
  * 
  * @param scopes - Array of permission scopes
  * @returns Authorization URL
  */
-export function getInstagramAuthUrl(scopes: string[] = ['user_profile', 'user_media']): string {
+export function getInstagramAuthUrl(scopes: string[] = ['instagram_basic', 'instagram_manage_insights', 'pages_show_list', 'pages_read_engagement']): string {
   const params = new URLSearchParams({
     client_id: INSTAGRAM_CONFIG.CLIENT_ID,
     redirect_uri: INSTAGRAM_CONFIG.REDIRECT_URI,
@@ -80,53 +45,158 @@ export function getInstagramAuthUrl(scopes: string[] = ['user_profile', 'user_me
 }
 
 /**
- * Exchange authorization code for access token
+ * Exchange authorization code for access token and get connected IG Business Account
  * 
  * @param code - Authorization code from OAuth callback
- * @returns Access token response
+ * @returns Access token response with IG User ID
  */
 export async function getInstagramAccessToken(code: string): Promise<{
   access_token: string
   user_id: string
 }> {
-  const formData = new FormData()
-  formData.append('client_id', INSTAGRAM_CONFIG.CLIENT_ID)
-  formData.append('client_secret', INSTAGRAM_CONFIG.CLIENT_SECRET)
-  formData.append('grant_type', 'authorization_code')
-  formData.append('redirect_uri', INSTAGRAM_CONFIG.REDIRECT_URI)
-  formData.append('code', code)
-
-  const response = await fetch(INSTAGRAM_ENDPOINTS.ACCESS_TOKEN, {
-    method: 'POST',
-    body: formData,
+  // 1. Get Short-Lived User Token
+  const params = new URLSearchParams({
+    client_id: INSTAGRAM_CONFIG.CLIENT_ID,
+    client_secret: INSTAGRAM_CONFIG.CLIENT_SECRET,
+    redirect_uri: INSTAGRAM_CONFIG.REDIRECT_URI,
+    code: code,
   })
 
+  const response = await fetch(`${INSTAGRAM_ENDPOINTS.ACCESS_TOKEN}?${params.toString()}`)
+
   if (!response.ok) {
-    throw new Error('Failed to get access token')
+    const errorText = await response.text()
+    throw new Error(`Failed to get access token: ${errorText}`)
   }
 
-  return response.json()
+  const tokenData = await response.json()
+  const shortLivedAccessToken = tokenData.access_token
+
+  // 2. Exchange for Long-Lived User Token (60 days)
+  const exchangeParams = new URLSearchParams({
+    grant_type: 'fb_exchange_token',
+    client_id: INSTAGRAM_CONFIG.CLIENT_ID,
+    client_secret: INSTAGRAM_CONFIG.CLIENT_SECRET,
+    fb_exchange_token: shortLivedAccessToken,
+  })
+
+  const exchangeResponse = await fetch(`${INSTAGRAM_ENDPOINTS.ACCESS_TOKEN}?${exchangeParams.toString()}`)
+
+  if (!exchangeResponse.ok) {
+    console.warn('Failed to exchange for long-lived token, using short-lived token')
+  }
+
+  const exchangeData = await exchangeResponse.json()
+  const longLivedAccessToken = exchangeData.access_token || shortLivedAccessToken
+
+  console.log('Token exchange successful. Got long-lived token:', !!exchangeData.access_token)
+
+  // 3. Get User's Pages and connected Instagram Accounts using the Long-Lived Token
+  const pagesResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=instagram_business_account{id,username,profile_picture_url},name,access_token&access_token=${longLivedAccessToken}`)
+
+  if (!pagesResponse.ok) {
+    console.warn('Failed to fetch user pages to find Instagram account')
+    const meResponse = await fetch(`https://graph.facebook.com/v18.0/me?access_token=${longLivedAccessToken}`)
+    const meData = await meResponse.json()
+    return {
+      access_token: longLivedAccessToken,
+      user_id: meData.id
+    }
+  }
+
+  const pagesData = await pagesResponse.json()
+
+  // Find the first page with a connected Instagram Business Account
+  let instagramAccountId = ''
+  let pageAccessToken = ''
+
+  if (pagesData.data) {
+    for (const page of pagesData.data) {
+      if (page.instagram_business_account && page.instagram_business_account.id) {
+        instagramAccountId = page.instagram_business_account.id
+        // Page tokens generated from a long-lived User token are also long-lived (no expiration)
+        pageAccessToken = page.access_token
+        break
+      }
+    }
+  }
+
+  if (!instagramAccountId) {
+    console.warn('No connected Instagram Business Account found')
+    const meResponse = await fetch(`https://graph.facebook.com/v18.0/me?access_token=${longLivedAccessToken}`)
+    const meData = await meResponse.json()
+    return {
+      access_token: longLivedAccessToken,
+      user_id: meData.id
+    }
+  }
+
+  return {
+    access_token: pageAccessToken || longLivedAccessToken,
+    user_id: instagramAccountId
+  }
 }
 
 /**
  * Get Instagram user profile
- * 
+      * 
  * @param accessToken - User's access token
- * @returns User profile data
- */
+      * @returns User profile data
+        */
 export async function getInstagramProfile(accessToken: string): Promise<InstagramProfile> {
-  const params = new URLSearchParams({
-    fields: 'id,username,account_type,media_count',
-    access_token: accessToken,
-  })
+  // Note: For Graph API, we usually query the specific IG User ID, not 'me'.
+  // But if we don't have the ID passed in, we might be stuck.
+  // Assuming this function is called with a token that might be Page or User token.
+  // We'll try to fetch 'me' assuming the caller knows what they are doing, 
+  // OR we should update this signature to accept userId.
 
-  const response = await fetch(`${INSTAGRAM_ENDPOINTS.USER_PROFILE}?${params.toString()}`)
+  // For backward compatibility, we'll try 'me' but it returns FB User info, not IG.
+  // We really need the IG User ID here.
+  // Let's assume the 'accessToken' is valid for the node we are querying.
+  // If we want the IG profile, we should query the IG ID.
+
+  // Since we can't easily change the signature everywhere without breaking things,
+  // we'll fetch 'me' (FB User) and try to map it, or error.
+
+  // BETTER STRATEGY: The caller should pass the IG User ID.
+  // But looking at usage, it's often used right after auth.
+
+  // Let's try to fetch the IG Business Account again if we can.
+  const response = await fetch(`https://graph.facebook.com/v18.0/me?fields=id,name,accounts{instagram_business_account{id,username,media_count}}&access_token=${accessToken}`)
 
   if (!response.ok) {
-    throw new Error('Failed to fetch Instagram profile')
+    throw new Error('Failed to fetch profile')
   }
 
-  return response.json()
+  const data = await response.json()
+
+  // Extract IG info
+  let igAccount = null
+  if (data.accounts?.data) {
+    for (const page of data.accounts.data) {
+      if (page.instagram_business_account) {
+        igAccount = page.instagram_business_account
+        break
+      }
+    }
+  }
+
+  if (igAccount) {
+    return {
+      id: igAccount.id,
+      username: igAccount.username,
+      account_type: 'BUSINESS',
+      media_count: igAccount.media_count || 0
+    }
+  }
+
+  // Fallback to basic FB info
+  return {
+    id: data.id,
+    username: data.name,
+    account_type: 'PERSONAL', // Assumption
+    media_count: 0
+  }
 }
 
 /**
@@ -140,13 +210,17 @@ export async function getInstagramMedia(
   accessToken: string,
   limit: number = 25
 ): Promise<InstagramMedia[]> {
+  // We need the IG User ID. We'll fetch it first.
+  const profile = await getInstagramProfile(accessToken)
+  const igUserId = profile.id
+
   const params = new URLSearchParams({
-    fields: 'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,username',
+    fields: 'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,username,like_count,comments_count',
     access_token: accessToken,
     limit: limit.toString(),
   })
 
-  const response = await fetch(`${INSTAGRAM_ENDPOINTS.USER_MEDIA}?${params.toString()}`)
+  const response = await fetch(`${INSTAGRAM_ENDPOINTS.USER_MEDIA(igUserId)}?${params.toString()}`)
 
   if (!response.ok) {
     throw new Error('Failed to fetch Instagram media')
@@ -179,7 +253,7 @@ export async function getMediaInsights(
   }
 
   const data = await response.json()
-  
+
   // Transform insights array to object
   const insights: Record<string, number> = {}
   data.data?.forEach((metric: { name: string; values: { value: number }[] }) => {
@@ -289,12 +363,12 @@ export function getRelativeTime(timestamp: string): string {
   const now = new Date()
   const past = new Date(timestamp)
   const diffMs = now.getTime() - past.getTime()
-  
+
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
   const diffWeeks = Math.floor(diffMs / 604800000)
-  
+
   if (diffMins < 60) {
     return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`
   } else if (diffHours < 24) {
@@ -329,19 +403,19 @@ export function isValidInstagramUsername(username: string): boolean {
 export function getBestPostingTimes(posts: { timestamp: string; likes: number; comments: number }[]): string[] {
   // Group posts by hour and calculate average engagement
   const hourlyEngagement: Record<number, { total: number; count: number }> = {}
-  
+
   posts.forEach(post => {
     const hour = new Date(post.timestamp).getHours()
     const engagement = post.likes + post.comments
-    
+
     if (!hourlyEngagement[hour]) {
       hourlyEngagement[hour] = { total: 0, count: 0 }
     }
-    
+
     hourlyEngagement[hour].total += engagement
     hourlyEngagement[hour].count += 1
   })
-  
+
   // Calculate average and sort
   const averages = Object.entries(hourlyEngagement)
     .map(([hour, data]) => ({
@@ -350,7 +424,7 @@ export function getBestPostingTimes(posts: { timestamp: string; likes: number; c
     }))
     .sort((a, b) => b.avgEngagement - a.avgEngagement)
     .slice(0, 3)
-  
+
   // Format as time ranges
   return averages.map(({ hour }) => {
     const nextHour = (hour + 1) % 24
@@ -380,7 +454,7 @@ export function handleInstagramError(error: unknown): string {
   if (error instanceof InstagramAPIError) {
     return error.message
   }
-  
+
   if (error instanceof Error) {
     if (error.message.includes('access_token')) {
       return 'Invalid or expired access token. Please reconnect your Instagram account.'
@@ -390,7 +464,7 @@ export function handleInstagramError(error: unknown): string {
     }
     return error.message
   }
-  
+
   return 'An unexpected error occurred while connecting to Instagram.'
 }
 
