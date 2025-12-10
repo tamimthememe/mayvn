@@ -182,16 +182,23 @@ def load_lora_weights(pipe: StableDiffusionPipeline, brand_id: Optional[str], lo
     try:
         logger.info(f"[LORA] Loading LoRA: {lora_path} with weight: {lora_weight}")
         
+        # Use adapter_name and set_adapters() method (matches script approach for better accuracy)
+        adapter_name = f"{brand_id}_adapter"
+        
         # Check if LoRA is a directory or file
         if os.path.isdir(lora_path):
             # If it's a directory, load from directory
-            pipe.load_lora_weights(lora_path, weight=lora_weight)
+            pipe.load_lora_weights(lora_path, adapter_name=adapter_name)
         else:
             # If it's a file, load from file path
             # For single file, we need to load from the directory containing it
             lora_dir = os.path.dirname(lora_path)
             weight_name = os.path.basename(lora_path)
-            pipe.load_lora_weights(lora_dir, weight_name=weight_name, weight=lora_weight)
+            pipe.load_lora_weights(lora_dir, weight_name=weight_name, adapter_name=adapter_name)
+        
+        # Explicitly set adapter with weight (more reliable than weight parameter in load_lora_weights)
+        pipe.set_adapters([adapter_name], adapter_weights=[lora_weight])
+        logger.info(f"[LORA] Set adapter '{adapter_name}' with weight: {lora_weight}")
         
         # Phase 2: Add to cache after successful load (for tracking and statistics)
         _add_to_cache(brand_id, lora_weight, pipe)
@@ -211,24 +218,23 @@ def unload_lora_weights(pipe: StableDiffusionPipeline) -> StableDiffusionPipelin
     """
     Unload LoRA weights from the pipeline to return to base model
     
-    Note: In diffusers, LoRA weights are typically fused or kept in memory.
-    This function attempts to unload if possible, but the base model state
-    should be preserved. For true isolation, consider using pipeline copies.
+    Uses disable_adapters() when using adapter-based approach (matches script).
     
     Args:
         pipe: The Stable Diffusion pipeline
         
     Returns:
-        Pipeline (LoRA may still be in memory, but won't affect next generation if new LoRA is loaded)
+        Pipeline with adapters disabled (returns to base model)
     """
     try:
-        # Try to unload if the method exists (diffusers 0.21+)
-        if hasattr(pipe, 'unload_lora_weights'):
+        # Disable adapters (matches script approach - more reliable)
+        if hasattr(pipe, 'disable_adapters'):
+            pipe.disable_adapters()
+            logger.info("[LORA] Adapters disabled (returned to base model)")
+        # Fallback to unload_lora_weights if disable_adapters not available
+        elif hasattr(pipe, 'unload_lora_weights'):
             pipe.unload_lora_weights()
             logger.info("[LORA] LoRA weights unloaded")
-        # Note: We don't need to do anything else as loading a new LoRA
-        # will override the previous one, or if no LoRA is loaded next time,
-        # the base model will be used
     except Exception as e:
         # Non-critical - LoRA unloading is optional
         logger.debug(f"[LORA] Note: LoRA unloading not available or not needed: {str(e)}")

@@ -1,0 +1,29 @@
+{
+  "brand_name": "Cheezious",
+  "total_images": 33,
+  "source": "brand_scraper",
+  "prepared_at": "C:\\Users\\Eman Khalid\\OneDrive\\Desktop\\FYPT\\mayvn\\python-service",
+  "brand_data": {
+    "colors": [
+      "#FFFFFF",
+      "#AEAEAE",
+      "#1A73E8",
+      "#216BA5",
+      "#E8EAED"
+    ],
+    "accent_color": "#1A73E8",
+    "fonts": [
+      "__Montserrat_069ab3",
+      "slick",
+      "swiper-icons",
+      "Google Sans"
+    ],
+    "tone_of_voice": [
+      "Professional",
+      "Friendly",
+      "Bold",
+      "Inspirational",
+      "Authoritative"
+    ]
+  }
+}

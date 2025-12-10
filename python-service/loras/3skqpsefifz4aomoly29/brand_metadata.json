@@ -41,10 +41,10 @@
   "main_font": "SF Pro KR",
   "business_overview": "",
   "logo": {
-    "logo": "https://www.apple.com/v/home/ci/images/logos/apple-card/logo__dcojfwkzna2q_medium.png",
     "logo_icon": "https://www.apple.com/retail/assets/images/icons/icon_shield-renewed.svg",
+    "logo_large": "https://www.apple.com/retail/assets/images/icons/list_icon_large.svg",
     "logo_small": "https://www.apple.com/v/home/ci/images/tv-plus-gallery/logo_hero_light__d7t8cya4x26a_small_2x.png",
-    "logo_large": "https://www.apple.com/retail/assets/images/icons/list_icon_large.svg"
+    "logo": "https://www.apple.com/v/home/ci/images/logos/apple-card/logo__dcojfwkzna2q_medium.png"
   },
   "images": [
     "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-pro-3-hero-select-202509?wid=890&hei=890&fmt=jpeg&qlt=90&.v=cmp4MmZ6OWxOeHNNTXh4SzlBNUpEb1RucE9zZTI5eEREaWZpY29lSld3eUptek50N2NUQ2VXdHJ5VEVlUUpYcmJGcXNRQnFCV0w3WVRjTExvdm1ic1YxRUxFRmRlWDBITzhnRmZ5OTRmaVdKTExiOEFsRmxtQ2Nua0tRSC83MkI",
@@ -53,5 +53,5 @@
     "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-max-select-202409-midnight?wid=890&hei=890&fmt=jpeg&qlt=90&.v=azQxRkVJKzd6V3J0aGNqWFhLMzBmdmVWNWdHYnp5cHkwMldsSElEOHpyeElaendWQlBIbUpKcDJJTG9yRSt0V3lRYitwRUI2YWJPWmw1SlRXUDh5VnppQWdEZjVIVUoweGVCQnUrWEowU1ZhN1ZHY2VKVGQ4Nmx6UkdSNXd0OGI",
     "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/homepod-mini-select-blue-202110?wid=890&hei=890&fmt=jpeg&qlt=90&.v=K2c3bEwyaWVDeDZkdHpLbHkwcGVSb2hKUGRrNk9TMEorN05vODNUcFN2alhQOWo1SzB3Ui9OcE1kNWU4ZDFsbTE1UUxLT2t0cW42N3FvQzVqaGhrVWNHYlRnSUQ2K3R4dERSdlFQQXpmS1YrYWpGdS9XeFgvbS9ITnNYOEhYaG4"
   ],
-  "saved_at": "2025-12-10T11:27:39.008360"
+  "saved_at": "2025-12-11T02:40:05.291874"
 }

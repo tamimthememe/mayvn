@@ -15,7 +15,7 @@ from PIL import Image
 import os
 from dotenv import load_dotenv
 import torch
-from diffusers import StableDiffusionPipeline
+from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
 import logging
 import uuid
 import threading
@@ -246,6 +246,10 @@ def load_stable_diffusion_model():
             requires_safety_checker=False
         )
         
+        # Use DPMSolverMultistepScheduler for better quality (matches script)
+        pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
+        logger.info("[IMAGE-GEN] Using DPMSolverMultistepScheduler for better quality")
+        
         # Move to device
         pipe = pipe.to(device)
         
@@ -401,14 +405,46 @@ def process_image_generation(job_id: str, request: GenerateRequest):
         if pipe is None:
             raise Exception("Model not loaded")
         
+        logger.info(f"[JOB-{job_id}] Generating image on {device}...")
+        
+        # Enhance prompt with brand style keywords if LoRA is loaded
+        enhanced_prompt = request.prompt
+        final_brand_id_for_prompt = None
+        
+        if request.lora_configs and len(request.lora_configs) > 0:
+            # Use first LoRA's brand_id for prompt enhancement
+            final_brand_id_for_prompt = request.lora_configs[0].brand_id
+        elif request.brand_id:
+            final_brand_id_for_prompt = request.brand_id
+        elif request.brand_data:
+            try:
+                final_brand_id_for_prompt = get_brand_id_from_data(request.brand_data)
+            except:
+                pass
+        
+        if lora_loaded and final_brand_id_for_prompt:
+            # Add brand style trigger to prompt for better LoRA activation
+            normalized_id = normalize_brand_id(final_brand_id_for_prompt)
+            # Add brand style keyword (e.g., "apple_style") to prompt
+            if f"{normalized_id}_style" not in enhanced_prompt.lower():
+                enhanced_prompt = f"{enhanced_prompt}, {normalized_id}_style"
+                logger.info(f"[JOB-{job_id}] Enhanced prompt with brand style keyword: {normalized_id}_style")
+        
+        # Enhanced negative prompt for better quality
+        enhanced_negative = request.negative_prompt or ""
+        if not enhanced_negative or len(enhanced_negative) < 50:
+            # Add comprehensive negative prompts if not provided
+            default_negatives = "blurry, low quality, distorted, text, letters, words, typography, watermark, ugly, amateur, cluttered, busy background, low resolution, oversaturated, poorly lit, bad composition"
+            enhanced_negative = enhanced_negative + (", " + default_negatives if enhanced_negative else default_negatives)
+        
         with torch.no_grad():
             result = pipe(
-                prompt=request.prompt,
-                negative_prompt=request.negative_prompt or "",
+                prompt=enhanced_prompt,
+                negative_prompt=enhanced_negative,
                 width=adjusted_width,
                 height=adjusted_height,
                 num_inference_steps=request.num_inference_steps,
-                guidance_scale=7.5,
+                guidance_scale=8.5,  # Higher guidance for stronger prompt adherence (increased from 7.5)
             )
         
         # Unload LoRA
@@ -653,13 +689,29 @@ async def generate_image(request: GenerateRequest):
         # Generate image with Stable Diffusion
         try:
             with torch.no_grad():  # Disable gradient computation for inference
+                # Enhance prompt with brand style keywords if LoRA is loaded
+                enhanced_prompt = request.prompt
+                if lora_loaded and final_brand_id:
+                    # Add brand style trigger to prompt for better LoRA activation
+                    normalized_id = normalize_brand_id(final_brand_id)
+                    # Add brand style keyword (e.g., "apple_style") to prompt
+                    if f"{normalized_id}_style" not in enhanced_prompt.lower():
+                        enhanced_prompt = f"{enhanced_prompt}, {normalized_id}_style"
+                
+                # Enhanced negative prompt for better quality
+                enhanced_negative = request.negative_prompt or ""
+                if not enhanced_negative or len(enhanced_negative) < 50:
+                    # Add comprehensive negative prompts if not provided
+                    default_negatives = "blurry, low quality, distorted, text, letters, words, typography, watermark, ugly, amateur, cluttered, busy background, low resolution, oversaturated, poorly lit, bad composition"
+                    enhanced_negative = enhanced_negative + (", " + default_negatives if enhanced_negative else default_negatives)
+                
                 result = pipe(
-                    prompt=request.prompt,
-                    negative_prompt=request.negative_prompt or "",
+                    prompt=enhanced_prompt,
+                    negative_prompt=enhanced_negative,
                     width=adjusted_width,
                     height=adjusted_height,
                     num_inference_steps=request.num_inference_steps,
-                    guidance_scale=7.5,  # How closely to follow the prompt
+                    guidance_scale=8.5,  # Higher guidance for stronger prompt adherence (increased from 7.5)
                 )
         finally:
             # Unload LoRA after generation to return to base model state

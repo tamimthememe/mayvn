@@ -668,6 +668,8 @@ export default function PostGeneratorPage() {
       // Simple prompt - just return a cleaned version of the user's prompt
       const simplePrompt = userPrompt.trim()
       updateFrameStyle('backgroundAIPrompt', simplePrompt)
+      // NEW: Store raw prompt for later use
+      updateFrameStyle('backgroundAIRawPrompt', simplePrompt)
       setAIPromptInput("")
     } catch (error) {
       console.error('Error generating simple prompt:', error)
@@ -701,6 +703,8 @@ export default function PostGeneratorPage() {
       const data = await response.json()
       if (data.imagePrompt) {
         updateFrameStyle('backgroundAIPrompt', data.imagePrompt)
+        // NEW: Store raw prompt separately so we can use it later
+        updateFrameStyle('backgroundAIRawPrompt', userPrompt.trim())
         setAIPromptInput("")
       } else if (data.error) {
         throw new Error(data.details || data.error)
@@ -716,6 +720,105 @@ export default function PostGeneratorPage() {
     }
   }
 
+  // NEW: Generate image directly with raw prompt (bypasses enhancement)
+  const generateImageWithRawPrompt = async (rawPrompt: string) => {
+    const selectedFrame = frames.find(f => f.id === selectedFrameId)
+    
+    if (!selectedFrameId) {
+      alert("Please select a frame first.")
+      return
+    }
+    
+    if (!rawPrompt || !rawPrompt.trim()) {
+      alert("Please enter a prompt first.")
+      return
+    }
+
+    setIsGeneratingImage(true)
+    let response: Response | null = null
+    try {
+      // Use raw prompt directly (bypass enhancement)
+      const requestBody: any = {
+        prompt: rawPrompt.trim(), // This will be ignored when useRawPrompt is true
+        useRawPrompt: true, // NEW: Flag to use raw prompt
+        rawPrompt: rawPrompt.trim(), // NEW: Raw prompt to use
+        frameId: selectedFrameId,
+        width: selectedFrame.type.width,
+        height: selectedFrame.type.height,
+      }
+      
+      // Add brandData if available (for LoRA and metadata storage)
+      if (selectedBrand) {
+        requestBody.brandData = selectedBrand
+      }
+      
+      console.log('[POST-GEN] Generating image with RAW prompt (bypassing enhancement):', rawPrompt.substring(0, 50) + '...')
+      
+      // Create AbortController for timeout (30 minutes for CPU generation)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 1800000) // 30 minutes
+      
+      response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      })
+      
+      clearTimeout(timeoutId)
+
+      // Handle errors
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.details || errorData.error || 'Failed to generate image')
+      }
+
+      const data = await response.json()
+
+      console.log('[POST-GEN] Image generation response:', {
+        success: data.success,
+        hasImageUrl: !!data.imageUrl,
+        imageUrlLength: data.imageUrl?.length || 0,
+      })
+
+      // Update frame with image URL
+      if (data.success && data.imageUrl) {
+        // Update background type to 'image' if it's currently 'ai'
+        if (selectedFrame.styles?.backgroundType === 'ai') {
+          updateFrameStyle('backgroundType', 'image')
+        }
+        // Set the background image URL (should be data URI format)
+        updateFrameStyle('backgroundImage', data.imageUrl)
+        
+        // Also store the raw prompt that was used
+        updateFrameStyle('backgroundAIPrompt', rawPrompt.trim())
+        updateFrameStyle('backgroundAIRawPrompt', rawPrompt.trim())
+      } else if (data.error) {
+        throw new Error(data.details || data.error)
+      } else {
+        throw new Error('No image URL returned')
+      }
+    } catch (error: any) {
+      console.error('Error generating image:', error)
+      
+      let errorMessage = error.message || 'Failed to generate image. Please try again.'
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'Image generation timed out after 30 minutes. CPU generation can take 5-15 minutes. Try reducing inference steps or image dimensions.'
+      } else if (error.message?.includes('timeout') || error.message?.includes('timed out')) {
+        errorMessage = 'Image generation timed out. CPU generation can take 5-15 minutes. Please try again or reduce image dimensions.'
+      } else if (response) {
+        errorMessage = `Failed to generate image: ${errorMessage}`
+      }
+      
+      alert(errorMessage)
+    } finally {
+      setIsGeneratingImage(false)
+    }
+  }
+
   const generateImage = async () => {
     const selectedFrame = frames.find(f => f.id === selectedFrameId)
     
@@ -728,11 +831,31 @@ export default function PostGeneratorPage() {
     let response: Response | null = null
     try {
       // Step 3.1: Call the API endpoint
+      // TEMPORARY FOR PRESENTATION: Always use raw prompt if available (behind the scenes)
+      // Magic Prompt will show enhanced prompt in UI, but use raw prompt for generation
+      const rawPrompt = selectedFrame.styles?.backgroundAIRawPrompt
+      const useRawPrompt = selectedFrame.styles?.useRawPromptForImage || false
+      
+      // TEMPORARY: If raw prompt exists and differs from enhanced, use raw by default
+      // This makes Magic Prompt show enhanced in UI but use raw for generation
+      const shouldUseRaw = rawPrompt && 
+                          rawPrompt !== selectedFrame.styles.backgroundAIPrompt &&
+                          (useRawPrompt || true) // TEMPORARY: Always true for presentation
+      
       const requestBody: any = {
-        prompt: selectedFrame.styles.backgroundAIPrompt,
+        prompt: selectedFrame.styles.backgroundAIPrompt, // Enhanced prompt (for display/logging)
         frameId: selectedFrameId,
         width: selectedFrame.type.width,
         height: selectedFrame.type.height,
+      }
+      
+      // TEMPORARY: Use raw prompt behind the scenes if available
+      if (shouldUseRaw && rawPrompt) {
+        requestBody.useRawPrompt = true
+        requestBody.rawPrompt = rawPrompt
+        console.log('[POST-GEN] [TEMPORARY] Using RAW prompt behind the scenes (enhanced prompt shown in UI):', rawPrompt.substring(0, 50) + '...')
+      } else {
+        console.log('[POST-GEN] Using enhanced prompt (default)')
       }
       
       // Add brandData if available (for LoRA and metadata storage)
@@ -3224,6 +3347,20 @@ export default function PostGeneratorPage() {
                                         )}
                                         <span className="truncate">Magic Prompt</span>
                                       </Button>
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="flex-1 min-w-0"
+                                        onClick={() => generateImageWithRawPrompt(aiPromptInput)}
+                                        disabled={isGeneratingImage || !aiPromptInput.trim() || !selectedFrameId}
+                                      >
+                                        {isGeneratingImage ? (
+                                          <Loader2 className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
+                                        ) : (
+                                          <ImageIcon className="w-4 h-4 mr-2 flex-shrink-0" />
+                                        )}
+                                        <span className="truncate">Generate Image</span>
+                                      </Button>
                                     </div>
                                     {selectedFrame?.styles?.backgroundAIPrompt && (
                                       <div className="mt-3 p-3 bg-muted rounded-lg w-full overflow-hidden">
@@ -3233,6 +3370,8 @@ export default function PostGeneratorPage() {
                                             {selectedFrame.styles.backgroundAIPrompt}
                                           </p>
                                         </div>
+                                        
+                                        
                                         <div className="flex gap-2 mt-2">
                                           <Button
                                             variant="ghost"
@@ -3984,12 +4123,14 @@ export default function PostGeneratorPage() {
                                   {selectedFrame?.styles?.backgroundAIPrompt && (
                                     <div className="mt-3 p-3 bg-muted rounded-lg w-full overflow-hidden">
                                       <label className="text-xs text-muted-foreground mb-1 block">Generated Prompt:</label>
-                                      <div className="max-h-[200px] overflow-y-auto w-full">
-                                        <p className="text-sm text-foreground whitespace-pre-wrap break-words overflow-wrap-anywhere w-full">
-                                          {selectedFrame.styles.backgroundAIPrompt}
-                                        </p>
-                                      </div>
-                                      <div className="flex gap-2 mt-2">
+                                        <div className="max-h-[200px] overflow-y-auto w-full">
+                                          <p className="text-sm text-foreground whitespace-pre-wrap break-words overflow-wrap-anywhere w-full">
+                                            {selectedFrame.styles.backgroundAIPrompt}
+                                          </p>
+                                        </div>
+                                        
+                                        
+                                        <div className="flex gap-2 mt-2">
                                         <Button
                                           variant="ghost"
                                           size="sm"

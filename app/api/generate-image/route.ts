@@ -65,7 +65,7 @@ const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { prompt, frameId, width, height, brandData } = body
+    const { prompt, frameId, width, height, brandData, useRawPrompt, rawPrompt } = body
 
     // Step 2.2: Request validation
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
@@ -104,9 +104,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 2.3: Parse prompt
-    const { positivePrompt, negativePrompt } = parsePrompt(prompt)
+    // NEW: Option to use raw prompt instead of enhanced prompt
+    // If useRawPrompt is true and rawPrompt is provided, use raw prompt
+    // Otherwise, use the enhanced prompt (existing behavior)
+    let finalPrompt = prompt
+    if (useRawPrompt && rawPrompt && typeof rawPrompt === 'string' && rawPrompt.trim()) {
+      finalPrompt = rawPrompt.trim()
+      console.log('[IMAGE-GEN] Using RAW prompt (bypassing enhancement)')
+    } else {
+      console.log('[IMAGE-GEN] Using enhanced prompt (default behavior)')
+    }
+    
+    const { positivePrompt, negativePrompt } = parsePrompt(finalPrompt)
 
     console.log('[IMAGE-GEN] Generating image for frame:', frameId)
+    console.log('[IMAGE-GEN] Prompt source:', useRawPrompt ? 'RAW (user input)' : 'ENHANCED (Qwen/Ollama)')
     console.log('[IMAGE-GEN] Positive prompt:', positivePrompt.substring(0, 100) + '...')
     console.log('[IMAGE-GEN] Negative prompt:', negativePrompt.substring(0, 100) + '...')
     console.log('[IMAGE-GEN] Dimensions:', imageWidth, 'x', imageHeight)
@@ -128,13 +140,13 @@ export async function POST(request: NextRequest) {
         negative_prompt: negativePrompt,
         width: imageWidth,
         height: imageHeight,
-        num_inference_steps: 30, // Default steps for good quality
+        num_inference_steps: 35, // More steps for better quality with LoRA
       }
       
       // Add brand_id if available
       if (brandId) {
         pythonServicePayload.brand_id = brandId
-        pythonServicePayload.lora_weights = 0.8 // Default LoRA weight
+        pythonServicePayload.lora_weights = 1.0 // Full weight for maximum LoRA effect
       }
       
       // Add brand_data for metadata storage
