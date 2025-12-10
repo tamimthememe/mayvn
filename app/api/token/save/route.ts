@@ -22,19 +22,8 @@ export async function POST(request: NextRequest) {
             console.warn('[Token Save] Could not encrypt token, storing as-is')
         }
 
-        // Save to database
-        // Note: We save as accessTokenEncrypted so db.ts knows to decrypt it
-        await saveInstagramAccount(userId, brandId, {
-            instagramUserId,
-            username: 'Instagram Account', // Will be updated when we fetch profile
-            accessTokenEncrypted: encryptedToken,
-            connectedAt: new Date(),
-            isActive: true,
-        })
-
-        // Determine token type (short-lived vs long-lived)
-        // Short-lived tokens are typically about 1 hour
-        // Long-lived tokens are about 60 days
+        // Determine token expiration and type
+        let tokenExpiresAt: number | undefined
         let tokenType = 'unknown'
         let expiresInDays = 0
 
@@ -45,27 +34,61 @@ export async function POST(request: NextRequest) {
             )
             if (debugResponse.ok) {
                 const debugData = await debugResponse.json()
+                console.log('[Token Save] Debug data:', debugData)
+
                 if (debugData.data?.expires_at) {
-                    const expiresAt = new Date(debugData.data.expires_at * 1000)
+                    // expires_at is in seconds, convert to milliseconds
+                    tokenExpiresAt = debugData.data.expires_at * 1000
+                    const expiresAtDate = new Date(tokenExpiresAt)
                     const now = new Date()
-                    expiresInDays = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                    expiresInDays = Math.ceil((expiresAtDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+                    console.log('[Token Save] Token expires at:', expiresAtDate.toISOString())
+                    console.log('[Token Save] Expires in days:', expiresInDays)
 
                     if (expiresInDays > 30) {
                         tokenType = 'long-lived'
                     } else if (expiresInDays > 0) {
                         tokenType = 'short-lived'
                     }
+                } else if (debugData.data?.data_access_expires_at) {
+                    // For page tokens, use data_access_expires_at
+                    tokenExpiresAt = debugData.data.data_access_expires_at * 1000
+                    tokenType = 'page-token'
+                    const expiresAtDate = new Date(tokenExpiresAt)
+                    const now = new Date()
+                    expiresInDays = Math.ceil((expiresAtDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                    console.log('[Token Save] Page token expires at:', expiresAtDate.toISOString())
+                } else {
+                    // No expiration means it's a never-expiring page token
+                    console.log('[Token Save] Token has no expiration (page token)')
+                    tokenType = 'page-token-permanent'
+                    // Set expiration to 60 days from now as a safety measure
+                    tokenExpiresAt = Date.now() + (60 * 24 * 60 * 60 * 1000)
                 }
             }
         } catch (e) {
-            console.warn('[Token Save] Could not determine token type')
+            console.warn('[Token Save] Could not determine token type:', e)
+            // Default to 60 days if we can't determine
+            tokenExpiresAt = Date.now() + (60 * 24 * 60 * 60 * 1000)
         }
+
+        // Save to database with expiration
+        await saveInstagramAccount(userId, brandId, {
+            instagramUserId,
+            username: 'Instagram Account', // Will be updated when we fetch profile
+            accessTokenEncrypted: encryptedToken,
+            tokenExpiresAt: tokenExpiresAt,
+            connectedAt: new Date(),
+            isActive: true,
+        })
 
         return NextResponse.json({
             success: true,
             message: 'Token saved successfully',
             tokenType,
-            expiresInDays
+            expiresInDays,
+            expiresAt: tokenExpiresAt ? new Date(tokenExpiresAt).toISOString() : undefined
         })
 
     } catch (error) {

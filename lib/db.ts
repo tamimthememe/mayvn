@@ -45,10 +45,19 @@ export async function getInstagramAccount(userId: string, brandId: string, insta
             }
         }
 
+        // Check if token is expired
+        const now = Date.now()
+        const expiresAt = data.tokenExpiresAt
+        const isExpired = expiresAt ? now > expiresAt : false
+
+        if (isExpired) {
+            console.log('[DB] Token expired for account', instagramUserId, 'expiresAt:', new Date(expiresAt).toISOString())
+        }
+
         return {
             account: { ...data, accessToken: token, isActive: data.isActive ?? true } as InstagramAccount,
             accessToken: token,
-            isExpired: false
+            isExpired
         }
     }
 
@@ -134,10 +143,19 @@ export async function getBrandInstagramAccounts(userId: string, brandId: string)
                     }
                 }
 
+                // Check if token is expired
+                const now = Date.now()
+                const expiresAt = data.tokenExpiresAt
+                const isExpired = expiresAt ? now > expiresAt : false
+
+                if (isExpired) {
+                    console.log('[DB] Token expired for account', data.instagramUserId, 'expiresAt:', new Date(expiresAt).toISOString())
+                }
+
                 return {
                     account: { ...data, accessToken: token, isActive: data.isActive ?? true } as InstagramAccount,
                     accessToken: token,
-                    isExpired: false
+                    isExpired
                 }
             })
         }

@@ -16,6 +16,7 @@ import {
     Instagram,
     Mail,
     Linkedin,
+    TrendingUp,
 } from "lucide-react"
 import { BrandSwitcher } from "./BrandSwitcher"
 import { cn } from "@/lib/utils"
@@ -52,6 +53,12 @@ const analyticsSubNav = [
         href: "/analytics/linkedin",
         icon: Linkedin,
         color: "text-blue-600",
+    },
+    {
+        name: "Trends",
+        href: "/analytics/trends",
+        icon: TrendingUp,
+        color: "text-green-500",
     },
 ]
 
@@ -161,7 +168,7 @@ function SidebarContent() {
                     {/* Dropdown items */}
                     <div className={cn(
                         "overflow-hidden transition-all duration-200",
-                        analyticsOpen ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
+                        analyticsOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
                     )}>
                         <div className="ml-4 mt-1 space-y-1 border-l border-border/50 pl-3">
                             {analyticsSubNav.map((item) => {

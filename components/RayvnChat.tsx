@@ -38,12 +38,19 @@ function parseMessage(content: string, posts: PostData[] = []): { text: string; 
     if (postIds.length === 0 && posts.length > 0) {
         posts.forEach(post => {
             if (!post.caption) return
-            // Check if the first 10 chars of the caption appear in the message (case-insensitive)
-            const cleanCaption = post.caption.replace(/\n/g, ' ').trim().toLowerCase()
-            const cleanContent = content.toLowerCase()
-            const snippet = cleanCaption.slice(0, 20)
 
-            if (snippet.length >= 5 && cleanContent.includes(snippet)) {
+            // Normalize strings: lowercase and remove non-alphanumeric chars
+            const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+            const cleanCaption = normalize(post.caption).slice(0, 30) // Match first 30 chars of content
+            const cleanMessage = normalize(content)
+
+            console.log(`[RayvnChat] Checking post: ${post.id}`)
+            console.log(`[RayvnChat] Clean Caption (first 30): ${cleanCaption}`)
+            console.log(`[RayvnChat] Match found: ${cleanMessage.includes(cleanCaption)}`)
+
+            // If the normalized caption (or a significant chunk of it) is in the message
+            if (cleanCaption.length >= 10 && cleanMessage.includes(cleanCaption)) {
                 if (!postIds.includes(post.id)) {
                     postIds.push(post.id)
                 }
@@ -286,6 +293,15 @@ export function RayvnChat({ triggerButton }: RayvnChatProps) {
                                 .map(id => getPostById(id))
                                 .filter((p): p is PostData => p !== undefined)
 
+                            // Split text into bubbles if it contains numbered lists
+                            // Allow splitting WHILE streaming for real-time bubble creation
+                            const textBubbles = (text.includes('1. '))
+                                ? text.split(/(?=\n\d+\.\s)/)
+                                    .map(t => t.trim())
+                                    .filter(t => t)
+                                    .map(t => t.replace(/^\d+\.\s*/, '').replace(/\*\*/g, ''))
+                                : [text]
+
                             return (
                                 <div
                                     key={message.id}
@@ -306,27 +322,32 @@ export function RayvnChat({ triggerButton }: RayvnChatProps) {
                                         </div>
                                     )}
                                     <div className={cn(
-                                        "max-w-[80%] space-y-1 flex flex-col",
+                                        "max-w-[80%] space-y-2 flex flex-col",
                                         message.role === 'user' ? "items-end" : "items-start"
                                     )}>
                                         <span className="text-xs text-gray-400 px-1 mb-1">
                                             {message.role === 'user' ? (user?.displayName || 'You') : 'Rayvn'}
                                         </span>
-                                        <div
-                                            className={cn(
-                                                "rounded-2xl px-4 py-2.5 text-sm",
-                                                message.role === 'user'
-                                                    ? "bg-primary text-white rounded-br-md"
-                                                    : "bg-[#1a1a1a] text-gray-200 rounded-bl-md border border-[#2a2a2a]"
-                                            )}
-                                        >
-                                            <p className="whitespace-pre-wrap">
-                                                {text}
-                                                {message.isStreaming && (
-                                                    <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse" />
+
+                                        {/* Render bubbles */}
+                                        {textBubbles.map((bubbleText, i) => (
+                                            <div
+                                                key={i}
+                                                className={cn(
+                                                    "rounded-2xl px-4 py-2.5 text-sm",
+                                                    message.role === 'user'
+                                                        ? "bg-primary text-white rounded-br-md"
+                                                        : "bg-[#1a1a1a] text-gray-200 rounded-bl-md border border-[#2a2a2a]"
                                                 )}
-                                            </p>
-                                        </div>
+                                            >
+                                                <p className="whitespace-pre-wrap">
+                                                    {bubbleText}
+                                                    {message.isStreaming && i === textBubbles.length - 1 && (
+                                                        <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse" />
+                                                    )}
+                                                </p>
+                                            </div>
+                                        ))}
 
                                         {/* Post thumbnails - show referenced posts */}
                                         {!message.isStreaming && referencedPosts.length > 0 && (
