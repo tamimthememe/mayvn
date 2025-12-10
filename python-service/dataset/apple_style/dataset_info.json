@@ -1,0 +1,34 @@
+{
+  "brand_name": "Apple",
+  "total_images": 48,
+  "source": "brand_scraper",
+  "prepared_at": "C:\\Users\\Eman Khalid\\OneDrive\\Desktop\\FYPT\\mayvn\\python-service",
+  "brand_data": {
+    "colors": [
+      "#FFFFFF",
+      "#000000",
+      "#424245",
+      "#006EDB",
+      "#D2D2D7"
+    ],
+    "accent_color": "#006EDB",
+    "fonts": [
+      "SF Pro JP",
+      "SF Pro TH",
+      "SF Pro KR",
+      "SF Pro AR"
+    ],
+    "tone_of_voice": [
+      "Professional",
+      "Inspirational",
+      "Technical",
+      "Playful",
+      "Innovative",
+      "Authoritative",
+      "Friendly",
+      "Warm",
+      "Confident",
+      "Approachable"
+    ]
+  }
+}

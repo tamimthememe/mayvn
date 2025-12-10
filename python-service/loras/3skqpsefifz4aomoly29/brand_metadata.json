@@ -1,0 +1,57 @@
+{
+  "brand_id": "3skqpsefifz4aomoly29",
+  "original_brand_id": "3SkQpSEFifz4aoMOly29",
+  "brand_name": "Apple",
+  "tagline": "Get what you've been waiting for all year.",
+  "brand_values": [
+    "Apple",
+    "Quick Links",
+    "Special Stores",
+    "Education",
+    "Business"
+  ],
+  "target_audience": [
+    "young tech enthusiasts",
+    "business professionals",
+    "healthcare providers",
+    "government officials",
+    "students."
+  ],
+  "tone_of_voice": [
+    "Professional",
+    "Technical",
+    "Innovative",
+    "Inspirational",
+    "Authoritative"
+  ],
+  "colors": [
+    "#FFFFFF",
+    "#1D1D1F",
+    "#0071E3",
+    "#D2D2D7",
+    "#000000"
+  ],
+  "accent_color": "#0071E3",
+  "fonts": [
+    "SF Pro KR",
+    "SF Pro JP",
+    "SF Pro TH",
+    "SF Pro AR"
+  ],
+  "main_font": "SF Pro KR",
+  "business_overview": "",
+  "logo": {
+    "logo": "https://www.apple.com/v/home/ci/images/logos/apple-card/logo__dcojfwkzna2q_medium.png",
+    "logo_icon": "https://www.apple.com/retail/assets/images/icons/icon_shield-renewed.svg",
+    "logo_small": "https://www.apple.com/v/home/ci/images/tv-plus-gallery/logo_hero_light__d7t8cya4x26a_small_2x.png",
+    "logo_large": "https://www.apple.com/retail/assets/images/icons/list_icon_large.svg"
+  },
+  "images": [
+    "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-pro-3-hero-select-202509?wid=890&hei=890&fmt=jpeg&qlt=90&.v=cmp4MmZ6OWxOeHNNTXh4SzlBNUpEb1RucE9zZTI5eEREaWZpY29lSld3eUptek50N2NUQ2VXdHJ5VEVlUUpYcmJGcXNRQnFCV0w3WVRjTExvdm1ic1YxRUxFRmRlWDBITzhnRmZ5OTRmaVdKTExiOEFsRmxtQ2Nua0tRSC83MkI",
+    "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-4-anc-select-202409?wid=890&hei=890&fmt=jpeg&qlt=90&.v=Qklmb1JJend3cVIxSUxIeFBIRk96bThJMURFZUhTTm9tejgvK2t1SGM0alhOajVuSnR2cU1UV3JuVjlsci9JdUJkRlpCNVhYU3AwTldRQldlSnpRa01rSksyTE9QS1lFVXpHNmJsRVlaOWM",
+    "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-4-select-202409?wid=890&hei=890&fmt=jpeg&qlt=90&.v=WnVKRVRUTFVsYThXaWkydWViL1Q3ZEN4V1pLSklodzFmK29hUjQ2eFh1OVY2b2d0eFdmWXNCTGMyV2gxYWVkN3R1amtqMElLOHVtQ3hqM1lPSjZJMDVFRkRRQm00VjRDSnlDbldRSnVaUFU",
+    "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-max-select-202409-midnight?wid=890&hei=890&fmt=jpeg&qlt=90&.v=azQxRkVJKzd6V3J0aGNqWFhLMzBmdmVWNWdHYnp5cHkwMldsSElEOHpyeElaendWQlBIbUpKcDJJTG9yRSt0V3lRYitwRUI2YWJPWmw1SlRXUDh5VnppQWdEZjVIVUoweGVCQnUrWEowU1ZhN1ZHY2VKVGQ4Nmx6UkdSNXd0OGI",
+    "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/homepod-mini-select-blue-202110?wid=890&hei=890&fmt=jpeg&qlt=90&.v=K2c3bEwyaWVDeDZkdHpLbHkwcGVSb2hKUGRrNk9TMEorN05vODNUcFN2alhQOWo1SzB3Ui9OcE1kNWU4ZDFsbTE1UUxLT2t0cW42N3FvQzVqaGhrVWNHYlRnSUQ2K3R4dERSdlFQQXpmS1YrYWpGdS9XeFgvbS9ITnNYOEhYaG4"
+  ],
+  "saved_at": "2025-12-10T11:27:39.008360"
+}
