@@ -298,6 +298,12 @@ export async function getMediaComments(
 /**
  * Refresh long-lived access token
  * 
+ * Note: For Facebook Graph API (Instagram Business), use fb_exchange_token.
+ * Page Access Tokens generated from long-lived User tokens don't expire,
+ * but User tokens need to be refreshed before they expire (within 60 days).
+ * 
+ * If the token has ALREADY expired, the user must re-authenticate.
+ * 
  * @param accessToken - Current access token
  * @returns New access token with extended expiration
  */
@@ -306,15 +312,27 @@ export async function refreshAccessToken(accessToken: string): Promise<{
   token_type: string
   expires_in: number
 }> {
+  // For Facebook Graph API, we need to use fb_exchange_token
+  // This only works if the token hasn't expired yet
   const params = new URLSearchParams({
-    grant_type: 'ig_refresh_token',
-    access_token: accessToken,
+    grant_type: 'fb_exchange_token',
+    client_id: INSTAGRAM_CONFIG.CLIENT_ID,
+    client_secret: INSTAGRAM_CONFIG.CLIENT_SECRET,
+    fb_exchange_token: accessToken,
   })
 
   const response = await fetch(`${INSTAGRAM_ENDPOINTS.ACCESS_TOKEN}?${params.toString()}`)
 
   if (!response.ok) {
-    throw new Error('Failed to refresh access token')
+    const errorData = await response.json()
+    console.error('[Instagram] Token refresh failed:', errorData)
+
+    // Check if it's an OAuth exception (expired token)
+    if (errorData.error?.code === 190) {
+      throw new Error('Token has expired. User must re-authenticate with Facebook/Instagram.')
+    }
+
+    throw new Error(errorData.error?.message || 'Failed to refresh access token')
   }
 
   return response.json()

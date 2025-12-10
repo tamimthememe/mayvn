@@ -7,6 +7,9 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from "@/components/ui/popover"
 import {
@@ -109,6 +112,7 @@ export default function EngagementPage() {
   // Queue for processing suggestions
   const [processingQueue, setProcessingQueue] = useState<string[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(false)
 
   // Load user data for avatar
   useEffect(() => {
@@ -207,8 +211,9 @@ export default function EngagementPage() {
     return post.comments.filter(c => !c.replied).length
   }
 
-  const handleReply = async (commentId: string) => {
-    if (!replyText.trim() || !user?.uid || !selectedBrand?.id) return
+  const handleReply = async (commentId: string, textOverride?: string) => {
+    const message = textOverride || replyText
+    if (!message.trim() || !user?.uid || !selectedBrand?.id) return
 
     setIsReplying(true)
     try {
@@ -219,7 +224,7 @@ export default function EngagementPage() {
           userId: user.uid,
           brandId: selectedBrand.id,
           commentId,
-          message: replyText
+          message: message
         })
       })
 
@@ -240,7 +245,7 @@ export default function EngagementPage() {
                 ...(c.replies || []),
                 {
                   id: data.replyId,
-                  text: replyText,
+                  text: message,
                   username: 'You',
                   timestamp: new Date().toISOString()
                 }
@@ -280,6 +285,7 @@ export default function EngagementPage() {
       const data = await response.json()
       if (data.suggestions) {
         setSuggestions(prev => ({ ...prev, [commentId]: data.suggestions }))
+        return data.suggestions as string[]
       }
     } catch (error) {
       console.error('Failed to generate suggestions:', error)
@@ -320,6 +326,36 @@ export default function EngagementPage() {
 
     processQueue()
   }, [processingQueue, isProcessing, selectedPost])
+
+  // Polling for new comments when auto-reply is enabled
+  useEffect(() => {
+    if (!autoReplyEnabled) return
+
+    const interval = setInterval(() => {
+      fetchPosts()
+    }, 10000) // Poll every 10s
+
+    return () => clearInterval(interval)
+  }, [autoReplyEnabled])
+
+  // Auto-reply execution
+  useEffect(() => {
+    if (!autoReplyEnabled || !selectedPost) return
+
+    const executeAutoReply = async () => {
+      for (const comment of selectedPost.comments) {
+        if (!comment.replied && suggestions[comment.id] && suggestions[comment.id].length > 0) {
+          if (!isReplying) {
+            // Use the first suggestion
+            await handleReply(comment.id, suggestions[comment.id][0])
+            break // Process one at a time
+          }
+        }
+      }
+    }
+
+    executeAutoReply()
+  }, [selectedPost, autoReplyEnabled, suggestions, isReplying])
 
   if (authLoading || brandLoading) {
     return (
@@ -409,6 +445,19 @@ export default function EngagementPage() {
                   </PopoverContent>
                 </Popover>
               )}
+
+              {/* Auto Reply Toggle */}
+              <div className="hidden md:flex items-center gap-2 bg-card/50 border border-border/50 rounded-lg px-3 py-2 ml-2">
+                <Switch
+                  id="auto-reply"
+                  checked={autoReplyEnabled}
+                  onCheckedChange={setAutoReplyEnabled}
+                />
+                <Label htmlFor="auto-reply" className="text-xs font-medium cursor-pointer flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-primary" />
+                  Auto-reply
+                </Label>
+              </div>
             </div>
             <div className="flex items-center gap-3 md:gap-4">
               <RayvnChat

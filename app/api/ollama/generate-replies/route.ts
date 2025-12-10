@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         console.log('[OLLAMA] Generating replies for comment:', commentText.substring(0, 50))
 
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 120000) // 120s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minute timeout
 
         try {
             const response = await fetch(`${OLLAMA_URL}/api/generate`, {

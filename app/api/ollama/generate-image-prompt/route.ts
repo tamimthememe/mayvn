@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     // Create AbortController for timeout
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 60000) // 1 minute timeout
+    const timeoutId = setTimeout(() => controller.abort(), 900000) // 15 minute timeout
 
     try {
       // Call OLLAMA API
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeoutId)
       
       if (fetchError.name === 'AbortError') {
-        console.error('[OLLAMA] Request timeout after 1 minute')
+        console.error('[OLLAMA] Request timeout after 5 minutes')
         throw new Error('Request timed out. OLLAMA is taking too long to respond.')
       }
       

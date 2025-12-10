@@ -1,5 +1,4 @@
-import { google } from '@ai-sdk/google';
-import { streamText } from 'ai';
+
 
 // System prompt for Rayvn personality
 const getSystemPrompt = (metricsContext: string) => `You are Rayvn, a social media friend and assistant.
@@ -33,16 +32,83 @@ export async function POST(req: Request) {
     try {
         const { messages, metricsContext } = await req.json();
 
-        const result = await streamText({
-            model: google('gemini-2.5-flash-lite'),
-            system: getSystemPrompt(metricsContext || 'No metrics data available yet.'),
-            messages: messages.map((m: any) => ({
-                role: m.role as 'user' | 'assistant',
+        const systemPrompt = getSystemPrompt(metricsContext || 'No metrics data available yet.');
+
+        // Add system prompt to the beginning of messages
+        const allMessages = [
+            { role: 'system', content: systemPrompt },
+            ...messages.map((m: any) => ({
+                role: m.role,
                 content: m.content
-            })),
+            }))
+        ];
+
+        console.log('[Rayvn API] Sending request to Ollama (llama3)...');
+
+        const response = await fetch('http://localhost:11434/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: 'llama3',
+                messages: allMessages,
+                stream: true,
+                options: {
+                    temperature: 0.7, // Creativity
+                    top_k: 50,
+                    top_p: 0.9,
+                }
+            }),
         });
 
-        return result.toTextStreamResponse();
+        if (!response.ok) {
+            throw new Error(`Ollama API error: ${response.statusText}`);
+        }
+
+        // Create a streaming response
+        const stream = new ReadableStream({
+            async start(controller) {
+                if (!response.body) return;
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+                        for (const line of lines) {
+                            try {
+                                const json = JSON.parse(line);
+                                if (json.message && json.message.content) {
+                                    controller.enqueue(json.message.content);
+                                }
+                                if (json.done) {
+                                    // Optional: handle completion stats
+                                }
+                            } catch (e) {
+                                console.error('Error parsing JSON chunk:', e);
+                            }
+                        }
+                    }
+                } finally {
+                    controller.close();
+                    reader.releaseLock();
+                }
+            }
+        });
+
+        return new Response(stream, {
+            headers: {
+                'Content-Type': 'text/plain; charset=utf-8',
+                'Transfer-Encoding': 'chunked',
+            },
+        });
+
     } catch (error: any) {
         console.error('[Rayvn API] Error:', error?.message || error);
         return Response.json({
