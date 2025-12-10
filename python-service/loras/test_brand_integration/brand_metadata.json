@@ -1,0 +1,34 @@
+{
+  "brand_id": "test_brand_integration",
+  "original_brand_id": "test_brand_integration",
+  "brand_name": "Test Integration Brand",
+  "tagline": "Testing brand integration",
+  "brand_values": [
+    "quality",
+    "innovation",
+    "testing"
+  ],
+  "target_audience": [
+    "developers",
+    "testers"
+  ],
+  "tone_of_voice": [
+    "professional",
+    "friendly"
+  ],
+  "colors": [
+    "#FF5733",
+    "#33FF57",
+    "#3357FF"
+  ],
+  "accent_color": "#FF5733",
+  "fonts": [
+    "Arial",
+    "Helvetica"
+  ],
+  "main_font": "Arial",
+  "business_overview": "A test brand for integration testing",
+  "logo": {},
+  "images": [],
+  "saved_at": "2025-12-09T22:30:51.462074"
+}

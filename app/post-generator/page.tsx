@@ -725,20 +725,35 @@ export default function PostGeneratorPage() {
     }
 
     setIsGeneratingImage(true)
+    let response: Response | null = null
     try {
       // Step 3.1: Call the API endpoint
-      const response = await fetch('/api/generate-image', {
+      const requestBody: any = {
+        prompt: selectedFrame.styles.backgroundAIPrompt,
+        frameId: selectedFrameId,
+        width: selectedFrame.type.width,
+        height: selectedFrame.type.height,
+      }
+      
+      // Add brandData if available (for LoRA and metadata storage)
+      if (selectedBrand) {
+        requestBody.brandData = selectedBrand
+      }
+      
+      // Create AbortController for timeout (30 minutes for CPU generation)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 1800000) // 30 minutes
+      
+      response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          prompt: selectedFrame.styles.backgroundAIPrompt,
-          frameId: selectedFrameId,
-          width: selectedFrame.type.width,
-          height: selectedFrame.type.height,
-        }),
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
       })
+      
+      clearTimeout(timeoutId)
 
       // Step 3.3: Handle errors - read error body for details
       if (!response.ok) {
@@ -748,13 +763,23 @@ export default function PostGeneratorPage() {
 
       const data = await response.json()
 
+      console.log('[POST-GEN] Image generation response:', {
+        success: data.success,
+        hasImageUrl: !!data.imageUrl,
+        imageUrlLength: data.imageUrl?.length || 0,
+        imageUrlPreview: data.imageUrl?.substring(0, 50) || 'none',
+        mock: data.mock,
+        warning: data.warning
+      })
+
       // Step 3.2: Update frame with image URL
       if (data.success && data.imageUrl) {
         // Update background type to 'image' if it's currently 'ai'
         if (selectedFrame.styles?.backgroundType === 'ai') {
           updateFrameStyle('backgroundType', 'image')
         }
-        // Set the background image URL
+        // Set the background image URL (should be data URI format)
+        console.log('[POST-GEN] Setting backgroundImage:', data.imageUrl.substring(0, 100) + '...')
         updateFrameStyle('backgroundImage', data.imageUrl)
       } else if (data.error) {
         throw new Error(data.details || data.error)
@@ -763,7 +788,28 @@ export default function PostGeneratorPage() {
       }
     } catch (error: any) {
       console.error('Error generating image:', error)
-      const errorMessage = error.message || 'Failed to generate image. Please try again.'
+      
+      // Check if it's a timeout error
+      let errorMessage = error.message || 'Failed to generate image. Please try again.'
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'Image generation timed out after 30 minutes. CPU generation can take 5-15 minutes. Try reducing inference steps or image dimensions.'
+      } else if (error.message?.includes('timeout') || error.message?.includes('timed out')) {
+        errorMessage = 'Image generation timed out. CPU generation can take 5-15 minutes. Please try again or reduce image dimensions.'
+      } else if (response) {
+        // Try to get more details from the response if available
+        try {
+          const errorData = await response.json().catch(() => ({}))
+          if (errorData.details) {
+            errorMessage = errorData.details
+          } else if (errorData.error) {
+            errorMessage = errorData.error
+          }
+        } catch (e) {
+          // Ignore JSON parse errors
+        }
+      }
+      
       alert(errorMessage)
     } finally {
       setIsGeneratingImage(false)
@@ -2439,9 +2485,13 @@ export default function PostGeneratorPage() {
                                 : `linear-gradient(${(selectedFrame.styles?.backgroundGradientAngle || 0) + 180}deg, ${selectedFrame.styles?.backgroundGradientStart || "#3b82f6"} ${selectedFrame.styles?.backgroundGradientStartStop ?? 0}%, ${selectedFrame.styles?.backgroundGradientEnd || "#8b5cf6"} ${selectedFrame.styles?.backgroundGradientEndStop ?? 100}%)`,
                             }),
                             ...(selectedFrame.styles?.backgroundType === "image" && selectedFrame.styles?.backgroundImage && {
-                              backgroundImage: `url(${selectedFrame.styles.backgroundImage})`,
+                              // Handle both data URIs and regular URLs
+                              backgroundImage: selectedFrame.styles.backgroundImage.startsWith('data:') 
+                                ? `url("${selectedFrame.styles.backgroundImage}")` 
+                                : `url(${selectedFrame.styles.backgroundImage})`,
                               backgroundSize: 'cover',
                               backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat',
                             }),
                             ...(!selectedFrame.styles?.backgroundType && {
                               backgroundColor: selectedFrame.styles?.backgroundColor || "#ffffff",
