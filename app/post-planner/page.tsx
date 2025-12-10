@@ -52,7 +52,7 @@ export default function PostPlannerPage() {
     
     const timeoutId = setTimeout(() => {
       controller.abort()
-    }, 180000) // 3 minute client-side timeout
+    }, 900000) // 15 minute client-side timeout
 
     try {
       const response = await fetch('/api/ollama/generate-ideas', {
