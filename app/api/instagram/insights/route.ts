@@ -85,7 +85,11 @@ export async function GET(request: NextRequest) {
             instagramUserId = activeAccount.account.instagramUserId
         }
 
-        console.log(`[Instagram Insights] Using account ${instagramUserId}, Token length: ${accessToken?.length}, Token prefix: ${accessToken?.substring(0, 5)}...`)
+        console.log(`[Instagram Insights] Using account ${instagramUserId}`)
+        console.log(`[Instagram Insights] Token length: ${accessToken?.length}`)
+        console.log(`[Instagram Insights] Token first 20 chars: ${accessToken?.substring(0, 20)}`)
+        console.log(`[Instagram Insights] Token last 20 chars: ${accessToken?.substring(accessToken.length - 20)}`)
+        console.log(`[Instagram Insights] Token contains colon: ${accessToken?.includes(':')}`)
 
         if (!accessToken) {
             console.error('[Instagram Insights] Access token is missing')
@@ -156,7 +160,7 @@ async function getAccountInfo(instagramUserId: string, accessToken: string) {
 }
 
 async function getCommentsForMedia(mediaId: string, accessToken: string) {
-    const commentsUrl = `${GRAPH_API_BASE}/${mediaId}/comments?fields=id,text,timestamp,from{id,username}&limit=10&access_token=${accessToken}`
+    const commentsUrl = `${GRAPH_API_BASE}/${mediaId}/comments?fields=id,text,timestamp,from{id,username},replies{id,text,timestamp,from{id,username}}&limit=25&access_token=${accessToken}`
     const commentsResponse = await fetch(commentsUrl)
 
     if (!commentsResponse.ok) {
@@ -169,11 +173,18 @@ async function getCommentsForMedia(mediaId: string, accessToken: string) {
         text: string
         timestamp: string
         from?: { id: string; username: string }
+        replies?: { data: Array<{ id: string; text: string; timestamp: string; from?: { id: string; username: string } }> }
     }, index: number) => ({
         id: comment.id,
         text: comment.text,
         username: comment.from?.username || `User ${index + 1}`,
-        timestamp: comment.timestamp
+        timestamp: comment.timestamp,
+        replies: (comment.replies?.data || []).map((reply, rIdx) => ({
+            id: reply.id,
+            text: reply.text,
+            username: reply.from?.username || `User`,
+            timestamp: reply.timestamp
+        }))
     }))
 }
 

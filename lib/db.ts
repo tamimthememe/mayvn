@@ -7,7 +7,8 @@ export interface InstagramAccount {
     username: string
     name?: string
     profilePictureUrl?: string
-    accessToken: string
+    accessToken?: string
+    accessTokenEncrypted?: string
     tokenExpiresAt?: number
     connectedAt: Date
     isActive?: boolean
@@ -25,21 +26,33 @@ export async function getInstagramAccount(userId: string, brandId: string, insta
     if (snapshot.exists()) {
         const data = snapshot.data()
         let token = data.accessToken
-        if (!token && data.accessTokenEncrypted) {
+
+        // Try accessTokenEncrypted first
+        if (data.accessTokenEncrypted) {
             try {
                 token = decrypt(data.accessTokenEncrypted)
             } catch (e) {
-                console.error('Failed to decrypt token', e)
+                console.error('Failed to decrypt token from accessTokenEncrypted', e)
             }
         }
+
+        // If token looks encrypted (contains : from IV), try to decrypt
+        if (token && token.includes(':') && token.length > 50) {
+            try {
+                token = decrypt(token)
+            } catch (e) {
+                console.error('Failed to decrypt token from accessToken', e)
+            }
+        }
+
         return {
             account: { ...data, accessToken: token, isActive: data.isActive ?? true } as InstagramAccount,
             accessToken: token,
-            isExpired: false // TODO: Implement expiration check
+            isExpired: false
         }
     }
 
-    // 2. Fallback: Check brand document if the requested ID matches (or if we just want *an* account)
+    // 2. Fallback: Check brand document
     const brandRef = doc(db, 'users', userId, 'brands', brandId)
     const brandSnap = await getDoc(brandRef)
     if (brandSnap.exists()) {
@@ -47,12 +60,19 @@ export async function getInstagramAccount(userId: string, brandId: string, insta
         let token = data.instagramAccessToken || data.accessToken || data.igAccessToken
         const igUserId = data.instagramUserId || data.igUserId
 
-        // Try encrypted token on brand doc
-        if (!token && data.accessTokenEncrypted) {
+        if (data.accessTokenEncrypted) {
             try {
                 token = decrypt(data.accessTokenEncrypted)
             } catch (e) {
                 console.error('Failed to decrypt token from brand doc', e)
+            }
+        }
+
+        if (token && token.includes(':') && token.length > 50) {
+            try {
+                token = decrypt(token)
+            } catch (e) {
+                console.error('Failed to decrypt token from brand doc accessToken', e)
             }
         }
 
@@ -82,20 +102,42 @@ export async function getBrandInstagramAccounts(userId: string, brandId: string)
         const snapshot = await getDocs(accountsRef)
 
         if (!snapshot.empty) {
-            return snapshot.docs.map(doc => {
-                const data = doc.data()
+            return snapshot.docs.map(docSnap => {
+                const data = docSnap.data()
                 let token = data.accessToken
-                if (!token && data.accessTokenEncrypted) {
+
+                console.log('[DB] Raw data:', {
+                    hasAccessToken: !!data.accessToken,
+                    hasAccessTokenEncrypted: !!data.accessTokenEncrypted,
+                    accessTokenLength: data.accessToken?.length
+                })
+
+                // Try accessTokenEncrypted first
+                if (data.accessTokenEncrypted) {
                     try {
+                        console.log('[DB] Decrypting from accessTokenEncrypted...')
                         token = decrypt(data.accessTokenEncrypted)
+                        console.log('[DB] Decrypted successfully, length:', token?.length)
                     } catch (e) {
-                        console.error('Failed to decrypt token', e)
+                        console.error('[DB] Failed to decrypt from accessTokenEncrypted:', e)
                     }
                 }
+
+                // If token looks encrypted (contains : from IV), try to decrypt
+                if (token && token.includes(':') && token.length > 50) {
+                    try {
+                        console.log('[DB] Token looks encrypted, decrypting from accessToken...')
+                        token = decrypt(token)
+                        console.log('[DB] Decrypted successfully, length:', token?.length)
+                    } catch (e) {
+                        console.error('[DB] Failed to decrypt from accessToken:', e)
+                    }
+                }
+
                 return {
                     account: { ...data, accessToken: token, isActive: data.isActive ?? true } as InstagramAccount,
                     accessToken: token,
-                    isExpired: false // TODO: Implement expiration check
+                    isExpired: false
                 }
             })
         }
@@ -105,18 +147,23 @@ export async function getBrandInstagramAccounts(userId: string, brandId: string)
         const brandSnap = await getDoc(brandRef)
         if (brandSnap.exists()) {
             const data = brandSnap.data()
-            console.log('[DB] Brand document data:', JSON.stringify(data, null, 2)) // Log entire brand doc
 
-            // Check for various possible field names for the token
             let token = data.instagramAccessToken || data.accessToken || data.igAccessToken
             const igUserId = data.instagramUserId || data.igUserId
 
-            // Try encrypted token on brand doc
-            if (!token && data.accessTokenEncrypted) {
+            if (data.accessTokenEncrypted) {
                 try {
                     token = decrypt(data.accessTokenEncrypted)
                 } catch (e) {
                     console.error('Failed to decrypt token from brand doc', e)
+                }
+            }
+
+            if (token && token.includes(':') && token.length > 50) {
+                try {
+                    token = decrypt(token)
+                } catch (e) {
+                    console.error('Failed to decrypt token from brand doc accessToken', e)
                 }
             }
 
@@ -135,11 +182,7 @@ export async function getBrandInstagramAccounts(userId: string, brandId: string)
                     accessToken: token,
                     isExpired: false
                 }]
-            } else {
-                console.log('[DB] Token or UserID missing on brand document')
             }
-        } else {
-            console.log('[DB] Brand document not found')
         }
 
         return []

@@ -32,6 +32,9 @@ export interface BrandData {
   company?: string;
   createdAt?: any;
   updatedAt?: any;
+  redditChallenge?: string;
+  redditUsername?: string;
+  isRedditVerified?: boolean;
 }
 
 /**
@@ -101,6 +104,20 @@ export const createBrandDocument = async (
     updatedAt: serverTimestamp(),
   });
   return brandRef.id;
+};
+
+/**
+ * Update a brand document in Firestore
+ */
+export const updateBrandDocument = async (
+  uid: string,
+  brandId: string,
+  data: Partial<BrandData>
+): Promise<void> => {
+  await updateDoc(doc(db, "users", uid, "brands", brandId), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
 };
 
 /**
@@ -231,5 +248,3 @@ export const saveBrandPost = async (
     return docRef.id;
   }
 };
-
-
